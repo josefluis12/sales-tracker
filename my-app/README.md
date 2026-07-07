@@ -6,7 +6,7 @@ The V1 goal is reliable record tracking. It does not deduct inventory, convert u
 
 ## Features
 
-- Supabase email/password authentication with protected app pages.
+- Login-only Supabase email/password authentication with protected app pages.
 - Clean admin dashboard layout with responsive navigation.
 - CRUD pages for products, product prices, suppliers, and expenses.
 - Purchase and sale entry with multiple line items and calculated totals.

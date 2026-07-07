@@ -2,9 +2,10 @@
 
 ## Authentication
 
-Users sign in or create an account with Supabase email/password auth. App pages
-are protected until a valid session is available, and the layout includes a
-mobile-friendly signed-in account area with sign out.
+Users sign in with Supabase email/password auth. This is a private app, so
+account creation is handled outside the public UI. App pages are protected until
+a valid session is available, and the layout includes a mobile-friendly
+signed-in account area with sign out.
 
 ## Dashboard
 

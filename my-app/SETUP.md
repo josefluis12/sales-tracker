@@ -19,7 +19,9 @@ Vite only exposes variables prefixed with `VITE_`.
 
 ## Supabase Auth
 
-Enable Email auth in Supabase Authentication.
+Enable Email auth in Supabase Authentication. This app only exposes a login
+form, so create allowed users from the Supabase dashboard or another private
+admin workflow.
 
 For local development, add this URL in Supabase Authentication settings:
 
@@ -27,8 +29,8 @@ For local development, add this URL in Supabase Authentication settings:
 http://localhost:5173
 ```
 
-If email confirmation is enabled, new users must confirm their email before
-they can sign in.
+If email confirmation is enabled, users must confirm their email before they can
+sign in.
 
 ## Supabase Database
 

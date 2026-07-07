@@ -1,6 +1,6 @@
 import type { FormEvent, ReactNode } from "react"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { Plus, RefreshCcw, Trash2 } from "lucide-react"
+import { Plus, RefreshCcw, Search, Trash2 } from "lucide-react"
 import { PAYMENT_METHODS } from "../../constants/payment-methods"
 import type { PaymentMethod } from "../../constants/payment-methods"
 import { PAYMENT_STATUS } from "../../constants/payment-status"
@@ -93,6 +93,18 @@ function getSelectedProductName(products: Product[], productId: string) {
   return products.find((product) => product.id === productId)?.name ?? "Selected product"
 }
 
+function getFilteredProducts(products: Product[], query: string) {
+  const normalizedQuery = query.trim().toLowerCase()
+
+  if (!normalizedQuery) {
+    return products.slice(0, 8)
+  }
+
+  return products
+    .filter((product) => product.name.toLowerCase().includes(normalizedQuery))
+    .slice(0, 8)
+}
+
 export function TransactionPage<TRecord extends TransactionRecord>({
   kind,
   title,
@@ -108,6 +120,7 @@ export function TransactionPage<TRecord extends TransactionRecord>({
   const [priceSuggestions, setPriceSuggestions] = useState<ProductPrice[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [items, setItems] = useState<ItemDraft[]>([{ ...blankItem }])
+  const [productSearches, setProductSearches] = useState<Record<number, string>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -230,6 +243,25 @@ export function TransactionPage<TRecord extends TransactionRecord>({
 
   function removeItem(index: number) {
     setItems((current) => current.filter((_, itemIndex) => itemIndex !== index))
+    setProductSearches((current) =>
+      Object.fromEntries(
+        Object.entries(current)
+          .filter(([itemIndex]) => Number(itemIndex) !== index)
+          .map(([itemIndex, query]) => {
+            const numericIndex = Number(itemIndex)
+
+            return [numericIndex > index ? numericIndex - 1 : numericIndex, query]
+          }),
+      ),
+    )
+  }
+
+  function selectProduct(index: number, product: Product) {
+    setItem(index, "product_id", product.id)
+    setProductSearches((current) => ({
+      ...current,
+      [index]: product.name,
+    }))
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -289,6 +321,7 @@ export function TransactionPage<TRecord extends TransactionRecord>({
 
       await createRecord(baseValues, mappedItems)
       setItems([{ ...blankItem }])
+      setProductSearches({})
       setFormValues((current) => ({
         ...current,
         date: todayIsoDate(),
@@ -580,159 +613,137 @@ export function TransactionPage<TRecord extends TransactionRecord>({
 
               <div className="field">
                 <label>Items</label>
-                <div className="form-grid">
+                <div className="transaction-items">
                   {items.map((item, index) => (
-                    <div
-                      className={kind === "sale" ? "item-row sale-mobile-item-row" : "item-row"}
-                      key={`${item.product_id}-${index}`}
-                    >
-                      {kind === "sale" ? (
-                        <div className="sale-mobile-product-step">
-                          <p className="sale-mobile-step-label">
-                            {item.product_id
-                              ? getSelectedProductName(products, item.product_id)
-                              : "Select product"}
-                          </p>
-                          <div className="sale-mobile-product-grid">
-                            {products.map((product) => (
-                              <button
-                                className={
-                                  item.product_id === product.id
-                                    ? "sale-mobile-product-option sale-mobile-product-option-active"
-                                    : "sale-mobile-product-option"
-                                }
-                                key={product.id}
-                                type="button"
-                                onClick={() => setItem(index, "product_id", product.id)}
-                              >
-                                {product.name}
-                              </button>
-                            ))}
-                          </div>
+                    <div className="item-row" key={`${item.product_id}-${index}`}>
+                      <div className="item-card-header">
+                        <div>
+                          <p className="item-card-title">Item {index + 1}</p>
+                          {item.product_id ? (
+                            <p className="item-card-product">
+                              {getSelectedProductName(products, item.product_id)}
+                            </p>
+                          ) : null}
                         </div>
-                      ) : null}
-                      <div
-                        className={
-                          kind === "sale" ? "field sale-desktop-product-field" : "field"
-                        }
-                      >
-                        <label htmlFor={`${kind}-item-${index}-product`}>Product</label>
-                        <select
-                          className="select"
-                          id={`${kind}-item-${index}-product`}
-                          required={kind !== "sale"}
-                          value={item.product_id}
-                          onChange={(event) => setItem(index, "product_id", event.target.value)}
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          aria-label="Remove item"
+                          disabled={items.length === 1}
+                          type="button"
+                          onClick={() => removeItem(index)}
                         >
-                          <option value="">Select product</option>
-                          {products.map((product) => (
-                            <option key={product.id} value={product.id}>
-                              {product.name}
-                            </option>
-                          ))}
-                        </select>
+                          <Trash2 size={15} aria-hidden="true" />
+                        </Button>
                       </div>
-                      <div
-                        className={
-                          kind === "sale" && !item.product_id
-                            ? "field sale-mobile-item-detail sale-mobile-hidden"
-                            : "field sale-mobile-item-detail"
-                        }
-                      >
-                        <label htmlFor={`${kind}-item-${index}-quantity`}>Quantity</label>
-                        <input
-                          className="input"
-                          id={`${kind}-item-${index}-quantity`}
-                          min="0"
-                          step="0.01"
-                          type="number"
-                          value={item.quantity}
-                          onChange={(event) => setItem(index, "quantity", event.target.value)}
-                          onBlur={(event) => {
-                            const value = event.target.value
 
-                            if (value) {
-                              setItem(
-                                index,
-                                "quantity",
-                                formatInputNumber(roundQuantity(parseAmount(value))),
-                              )
-                            }
-                          }}
-                        />
-                      </div>
-                      <div
-                        className={
-                          kind === "sale" && !item.product_id
-                            ? "field sale-mobile-item-detail sale-mobile-hidden"
-                            : "field sale-mobile-item-detail"
-                        }
-                      >
-                        <label htmlFor={`${kind}-item-${index}-unit`}>Unit</label>
-                        <select
-                          className="select"
-                          id={`${kind}-item-${index}-unit`}
-                          value={item.unit}
-                          onChange={(event) => setItem(index, "unit", event.target.value)}
-                        >
-                          {UNITS.map((unit) => (
-                            <option key={unit} value={unit}>
-                              {formatLabel(unit)}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div
-                        className={
-                          kind === "sale" && !item.product_id
-                            ? "field sale-mobile-item-detail sale-mobile-hidden"
-                            : "field sale-mobile-item-detail"
-                        }
-                      >
-                        <label htmlFor={`${kind}-item-${index}-price`}>{itemPriceLabel}</label>
-                        <input
-                          className="input"
-                          id={`${kind}-item-${index}-price`}
-                          min="0"
-                          step="0.01"
-                          type="number"
-                          value={item.price}
-                          onChange={(event) => setItem(index, "price", event.target.value)}
-                        />
-                      </div>
-                      {kind === "sale" ? (
-                        <div
-                          className={
-                            !item.product_id
-                              ? "field sale-mobile-item-detail sale-mobile-hidden"
-                              : "field sale-mobile-item-detail"
-                          }
-                        >
-                          <label htmlFor={`${kind}-item-${index}-subtotal`}>Subtotal</label>
+                      <div className="field item-product-search">
+                        <label htmlFor={`${kind}-item-${index}-product-search`}>Search item</label>
+                        <div className="search-input-wrap">
+                          <Search aria-hidden="true" />
                           <input
-                            className="input"
-                            id={`${kind}-item-${index}-subtotal`}
-                            min="0"
-                            step="0.01"
-                            type="number"
-                            value={item.subtotal}
-                            placeholder={String(roundCurrency(getItemSubtotal(item)))}
+                            className="input search-input"
+                            id={`${kind}-item-${index}-product-search`}
+                            placeholder="Type product name"
+                            value={
+                              productSearches[index] ??
+                              (item.product_id
+                                ? getSelectedProductName(products, item.product_id)
+                                : "")
+                            }
                             onChange={(event) =>
-                              setItem(index, "subtotal", event.target.value)
+                              setProductSearches((current) => ({
+                                ...current,
+                                [index]: event.target.value,
+                              }))
                             }
                           />
                         </div>
-                      ) : null}
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        aria-label="Remove item"
-                        disabled={items.length === 1}
-                        type="button"
-                        onClick={() => removeItem(index)}
-                      >
-                        <Trash2 size={15} aria-hidden="true" />
-                      </Button>
+                        <div className="product-search-results">
+                          {getFilteredProducts(products, productSearches[index] ?? "").map(
+                            (product) => (
+                              <button
+                                className={
+                                  item.product_id === product.id
+                                    ? "product-search-option product-search-option-active"
+                                    : "product-search-option"
+                                }
+                                key={product.id}
+                                type="button"
+                                onClick={() => selectProduct(index, product)}
+                              >
+                                {product.name}
+                              </button>
+                            ),
+                          )}
+                          {products.length === 0 ? (
+                            <p className="product-search-empty">No products yet.</p>
+                          ) : getFilteredProducts(products, productSearches[index] ?? "")
+                              .length === 0 ? (
+                            <p className="product-search-empty">No matching products.</p>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="item-detail-grid">
+                        <div className="field">
+                          <label htmlFor={`${kind}-item-${index}-unit`}>Unit</label>
+                          <select
+                            className="select"
+                            id={`${kind}-item-${index}-unit`}
+                            value={item.unit}
+                            onChange={(event) => setItem(index, "unit", event.target.value)}
+                          >
+                            {UNITS.map((unit) => (
+                              <option key={unit} value={unit}>
+                                {formatLabel(unit)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="field">
+                          <label htmlFor={`${kind}-item-${index}-quantity`}>Quantity</label>
+                          <input
+                            className="input"
+                            id={`${kind}-item-${index}-quantity`}
+                            min="0"
+                            step="0.01"
+                            type="number"
+                            value={item.quantity}
+                            onChange={(event) => setItem(index, "quantity", event.target.value)}
+                            onBlur={(event) => {
+                              const value = event.target.value
+
+                              if (value) {
+                                setItem(
+                                  index,
+                                  "quantity",
+                                  formatInputNumber(roundQuantity(parseAmount(value))),
+                                )
+                              }
+                            }}
+                          />
+                        </div>
+
+                        <div className="field">
+                          <label htmlFor={`${kind}-item-${index}-price`}>{itemPriceLabel}</label>
+                          <input
+                            className="input"
+                            id={`${kind}-item-${index}-price`}
+                            min="0"
+                            step="0.01"
+                            type="number"
+                            value={item.price}
+                            onChange={(event) => setItem(index, "price", event.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="item-subtotal-strip">
+                        <span>Subtotal</span>
+                        <strong>{formatCurrency(roundCurrency(getItemSubtotal(item)))}</strong>
+                      </div>
                     </div>
                   ))}
                 </div>

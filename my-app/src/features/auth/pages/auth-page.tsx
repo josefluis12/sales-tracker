@@ -11,39 +11,21 @@ import {
 import { Input } from "../../../components/ui/input"
 import { Label } from "../../../components/ui/label"
 import { getErrorMessage } from "../../../lib/utils"
-import {
-  signInWithPassword,
-  signUpWithPassword,
-} from "../services/auth-service"
-
-type AuthMode = "sign-in" | "sign-up"
+import { signInWithPassword } from "../services/auth-service"
 
 export function AuthPage() {
-  const [mode, setMode] = useState<AuthMode>("sign-in")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
-  const [noticeMessage, setNoticeMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const isSignUp = mode === "sign-up"
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setErrorMessage("")
-    setNoticeMessage("")
     setIsSubmitting(true)
 
     try {
-      if (isSignUp) {
-        const data = await signUpWithPassword({ email, password })
-
-        if (!data.session) {
-          setNoticeMessage("Account created. Check your email to confirm access.")
-        }
-      } else {
-        await signInWithPassword({ email, password })
-      }
+      await signInWithPassword({ email, password })
     } catch (error) {
       setErrorMessage(getErrorMessage(error))
     } finally {
@@ -82,11 +64,9 @@ export function AuthPage() {
             <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
               <LockKeyhole className="h-5 w-5" aria-hidden="true" />
             </div>
-            <CardTitle>{isSignUp ? "Create account" : "Welcome back"}</CardTitle>
+            <CardTitle>Welcome back</CardTitle>
             <CardDescription>
-              {isSignUp
-                ? "Create a Supabase auth account for this tracker."
-                : "Sign in with your Supabase email and password."}
+              Sign in with your Supabase email and password.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -108,7 +88,7 @@ export function AuthPage() {
                 <Input
                   id="password"
                   type="password"
-                  autoComplete={isSignUp ? "new-password" : "current-password"}
+                  autoComplete="current-password"
                   minLength={6}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
@@ -122,36 +102,13 @@ export function AuthPage() {
                 </p>
               ) : null}
 
-              {noticeMessage ? (
-                <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
-                  {noticeMessage}
-                </p>
-              ) : null}
-
               <Button type="submit" className="h-11 w-full" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <Loader2 className="animate-spin" aria-hidden="true" />
                 ) : null}
-                {isSignUp ? "Create account" : "Sign in"}
+                Sign in
               </Button>
             </form>
-
-            <div className="mt-4 flex flex-col gap-2 text-center text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-center">
-              <span>
-                {isSignUp ? "Already have an account?" : "Need an account?"}
-              </span>
-              <button
-                type="button"
-                className="font-semibold text-primary underline-offset-4 hover:underline"
-                onClick={() => {
-                  setMode(isSignUp ? "sign-in" : "sign-up")
-                  setErrorMessage("")
-                  setNoticeMessage("")
-                }}
-              >
-                {isSignUp ? "Sign in" : "Create one"}
-              </button>
-            </div>
           </CardContent>
         </Card>
       </div>

@@ -394,12 +394,71 @@
     @apply text-xs font-bold text-muted-foreground;
   }
 
-  .item-row {
-    @apply grid grid-cols-1 gap-2 rounded-lg border bg-muted/20 p-3 lg:grid-cols-[minmax(10rem,1fr)_5.5rem_6rem_7rem_7rem_2.5rem] lg:items-end lg:border-0 lg:bg-transparent lg:p-0;
+  .transaction-items {
+    @apply grid gap-3;
   }
 
-  .sale-mobile-details,
-  .sale-mobile-product-step {
+  .item-row {
+    @apply grid gap-4 rounded-lg border bg-muted/20 p-3;
+  }
+
+  .item-card-header {
+    @apply flex items-start justify-between gap-3;
+  }
+
+  .item-card-title {
+    @apply m-0 text-xs font-extrabold uppercase tracking-normal text-muted-foreground;
+  }
+
+  .item-card-product {
+    @apply m-0 mt-1 text-base font-extrabold leading-tight text-foreground;
+  }
+
+  .item-product-search {
+    @apply min-w-0;
+  }
+
+  .search-input-wrap {
+    @apply relative;
+  }
+
+  .search-input-wrap svg {
+    @apply pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground;
+  }
+
+  .search-input {
+    @apply pl-9;
+  }
+
+  .product-search-results {
+    @apply mt-2 grid max-h-52 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2;
+  }
+
+  .product-search-option {
+    @apply min-h-11 rounded-md border bg-background px-3 py-2 text-left text-sm font-bold text-foreground shadow-sm transition-colors hover:border-[#256f46] hover:bg-[#f7fff4];
+  }
+
+  .product-search-option-active {
+    @apply border-[#256f46] bg-[#e9f7e2] text-[#163824];
+  }
+
+  .product-search-empty {
+    @apply m-0 rounded-md border border-dashed bg-background px-3 py-3 text-sm font-semibold text-muted-foreground;
+  }
+
+  .item-detail-grid {
+    @apply grid grid-cols-1 gap-3 sm:grid-cols-3;
+  }
+
+  .item-subtotal-strip {
+    @apply flex items-center justify-between gap-3 rounded-md bg-background px-3 py-2 text-sm font-bold text-muted-foreground;
+  }
+
+  .item-subtotal-strip strong {
+    @apply text-base font-extrabold text-foreground;
+  }
+
+  .sale-mobile-details {
     @apply hidden;
   }
 
@@ -529,8 +588,7 @@
     @apply justify-end;
   }
 
-  .sale-secondary-field,
-  .sale-desktop-product-field {
+  .sale-secondary-field {
     @apply hidden;
   }
 
@@ -550,35 +608,4 @@
     @apply grid gap-4 border-t px-4 py-4;
   }
 
-  .sale-mobile-item-row {
-    @apply gap-4;
-  }
-
-  .sale-mobile-product-step {
-    @apply block;
-  }
-
-  .sale-mobile-step-label {
-    @apply m-0 mb-2 text-sm font-extrabold text-foreground;
-  }
-
-  .sale-mobile-product-grid {
-    @apply grid max-h-72 grid-cols-2 gap-2 overflow-y-auto pr-1;
-  }
-
-  .sale-mobile-product-option {
-    @apply min-h-12 rounded-md border bg-background px-3 py-2 text-left text-sm font-bold text-foreground shadow-sm transition-colors;
-  }
-
-  .sale-mobile-product-option-active {
-    @apply border-[#256f46] bg-[#e9f7e2] text-[#163824];
-  }
-
-  .sale-mobile-item-detail {
-    @apply block;
-  }
-
-  .sale-mobile-hidden {
-    @apply hidden;
-  }
 }
