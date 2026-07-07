@@ -1,7 +1,10 @@
 import { Link } from "react-router-dom"
-import { BarChart3, ClipboardList } from "lucide-react"
+import { BarChart3, Plus } from "lucide-react"
 import { TransactionPage } from "../../../components/common/transaction-page"
-import type { TransactionCreateItem, TransactionCreateValues } from "../../../components/common/transaction-page"
+import type {
+  TransactionCreateItem,
+  TransactionCreateValues,
+} from "../../../components/common/transaction-page"
 import { Button } from "../../../components/ui/button"
 import { getActiveProductPrices } from "../../product-prices/services/product-prices-service"
 import { createSaleWithItems, deleteSale, getSales } from "../services/sales-service"
@@ -11,23 +14,23 @@ function saveSale(values: TransactionCreateValues, items: TransactionCreateItem[
   return createSaleWithItems(values as SaleCreateValues, items as SaleItemFormValues[])
 }
 
-export function SalesPage() {
+export function SalesRecordsPage() {
   return (
     <TransactionPage<Sale>
       kind="sale"
-      title="Sales"
-      description="Record sales and line item prices exactly as charged at the time of sale."
+      title="Sales Records"
+      description="Review previous sales, payment status, paid amounts, balances, and notes."
       getRecords={getSales}
       createRecord={saveSale}
       deleteRecord={deleteSale}
       getPriceSuggestions={getActiveProductPrices}
-      hideRecordsOnMobile
+      view="records"
       headerActions={
         <>
-          <Button asChild className="lg:hidden" variant="outline" type="button">
-            <Link to="/sales-records">
-              <ClipboardList size={16} aria-hidden="true" />
-              Sales Records
+          <Button asChild variant="outline" type="button">
+            <Link to="/sales">
+              <Plus size={16} aria-hidden="true" />
+              New Sale
             </Link>
           </Button>
           <Button asChild variant="outline" type="button">

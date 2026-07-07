@@ -1,6 +1,6 @@
 import type { FormEvent, ReactNode } from "react"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { Plus, RefreshCcw, Search, Trash2 } from "lucide-react"
+import { Pencil, Plus, RefreshCcw, Search, Trash2 } from "lucide-react"
 import { PAYMENT_METHODS } from "../../constants/payment-methods"
 import type { PaymentMethod } from "../../constants/payment-methods"
 import { PAYMENT_STATUS } from "../../constants/payment-status"
@@ -57,6 +57,8 @@ type TransactionPageProps<TRecord extends TransactionRecord> = {
   deleteRecord: (id: string) => Promise<void>
   getPriceSuggestions?: () => Promise<ProductPrice[]>
   headerActions?: ReactNode
+  hideRecordsOnMobile?: boolean
+  view?: "full" | "records"
 }
 
 const blankItem: ItemDraft = {
@@ -114,12 +116,15 @@ export function TransactionPage<TRecord extends TransactionRecord>({
   deleteRecord,
   getPriceSuggestions,
   headerActions,
+  hideRecordsOnMobile = false,
+  view = "full",
 }: TransactionPageProps<TRecord>) {
   const [records, setRecords] = useState<TRecord[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [priceSuggestions, setPriceSuggestions] = useState<ProductPrice[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [items, setItems] = useState<ItemDraft[]>([{ ...blankItem }])
+  const [mobileActiveItemIndex, setMobileActiveItemIndex] = useState(0)
   const [productSearches, setProductSearches] = useState<Record<number, string>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -145,6 +150,10 @@ export function TransactionPage<TRecord extends TransactionRecord>({
     kind === "sale"
       ? roundCurrency(Math.max(totalAmount - amountPaid, 0))
       : 0
+  const mobileActiveItem = items[mobileActiveItemIndex] ?? items[0]
+  const mobileCheckoutItems = items
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => item.product_id && parseAmount(item.quantity) > 0)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -243,6 +252,17 @@ export function TransactionPage<TRecord extends TransactionRecord>({
 
   function removeItem(index: number) {
     setItems((current) => current.filter((_, itemIndex) => itemIndex !== index))
+    setMobileActiveItemIndex((current) => {
+      if (current > index) {
+        return current - 1
+      }
+
+      if (current === index) {
+        return Math.max(0, current - 1)
+      }
+
+      return current
+    })
     setProductSearches((current) =>
       Object.fromEntries(
         Object.entries(current)
@@ -254,6 +274,31 @@ export function TransactionPage<TRecord extends TransactionRecord>({
           }),
       ),
     )
+  }
+
+  function addMobileProductToCheckout() {
+    const activeItem = items[mobileActiveItemIndex]
+
+    if (
+      !activeItem?.product_id ||
+      parseAmount(activeItem.quantity) <= 0 ||
+      getItemSubtotal(activeItem) <= 0
+    ) {
+      setError("Complete the current product before adding another product.")
+      return
+    }
+
+    setError(null)
+    setItems((current) => [...current, { ...blankItem }])
+    setMobileActiveItemIndex(items.length)
+  }
+
+  function editMobileCheckoutItem(index: number) {
+    setMobileActiveItemIndex(index)
+    setProductSearches((current) => ({
+      ...current,
+      [index]: getSelectedProductName(products, items[index]?.product_id ?? ""),
+    }))
   }
 
   function selectProduct(index: number, product: Product) {
@@ -321,6 +366,7 @@ export function TransactionPage<TRecord extends TransactionRecord>({
 
       await createRecord(baseValues, mappedItems)
       setItems([{ ...blankItem }])
+      setMobileActiveItemIndex(0)
       setProductSearches({})
       setFormValues((current) => ({
         ...current,
@@ -367,7 +413,10 @@ export function TransactionPage<TRecord extends TransactionRecord>({
         </div>
       </header>
 
-      <div className="content-grid transaction-grid">
+      {error ? <div className="state error">{error}</div> : null}
+
+      <div className={view === "records" ? "records-only-grid" : "content-grid transaction-grid"}>
+        {view === "full" ? (
         <section className="panel">
           <div className="panel-header">
             <h2 className="panel-title">New {kind}</h2>
@@ -613,7 +662,189 @@ export function TransactionPage<TRecord extends TransactionRecord>({
 
               <div className="field">
                 <label>Items</label>
-                <div className="transaction-items">
+                {kind === "sale" && mobileActiveItem ? (
+                  <div className="mobile-sale-checkout-flow">
+                    <div className="mobile-sale-current-item">
+                      <div className="mobile-sale-section-header">
+                        <div>
+                          <p className="mobile-sale-section-label">Current product</p>
+                          <h3>
+                            {mobileActiveItem.product_id
+                              ? getSelectedProductName(products, mobileActiveItem.product_id)
+                              : "Select a product"}
+                          </h3>
+                        </div>
+                        <span>{formatCurrency(roundCurrency(getItemSubtotal(mobileActiveItem)))}</span>
+                      </div>
+
+                      <div className="field item-product-search">
+                        <label htmlFor="sale-mobile-active-product-search">Search item</label>
+                        <div className="search-input-wrap">
+                          <Search aria-hidden="true" />
+                          <input
+                            className="input search-input"
+                            id="sale-mobile-active-product-search"
+                            placeholder="Type product name"
+                            value={
+                              productSearches[mobileActiveItemIndex] ??
+                              (mobileActiveItem.product_id
+                                ? getSelectedProductName(products, mobileActiveItem.product_id)
+                                : "")
+                            }
+                            onChange={(event) =>
+                              setProductSearches((current) => ({
+                                ...current,
+                                [mobileActiveItemIndex]: event.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                        <div className="product-search-results">
+                          {getFilteredProducts(
+                            products,
+                            productSearches[mobileActiveItemIndex] ?? "",
+                          ).map((product) => (
+                            <button
+                              className={
+                                mobileActiveItem.product_id === product.id
+                                  ? "product-search-option product-search-option-active"
+                                  : "product-search-option"
+                              }
+                              key={product.id}
+                              type="button"
+                              onClick={() => selectProduct(mobileActiveItemIndex, product)}
+                            >
+                              {product.name}
+                            </button>
+                          ))}
+                          {products.length === 0 ? (
+                            <p className="product-search-empty">No products yet.</p>
+                          ) : getFilteredProducts(
+                              products,
+                              productSearches[mobileActiveItemIndex] ?? "",
+                            ).length === 0 ? (
+                            <p className="product-search-empty">No matching products.</p>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="item-detail-grid">
+                        <div className="field">
+                          <label htmlFor="sale-mobile-active-unit">Unit</label>
+                          <select
+                            className="select"
+                            id="sale-mobile-active-unit"
+                            value={mobileActiveItem.unit}
+                            onChange={(event) =>
+                              setItem(mobileActiveItemIndex, "unit", event.target.value)
+                            }
+                          >
+                            {UNITS.map((unit) => (
+                              <option key={unit} value={unit}>
+                                {formatLabel(unit)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="field">
+                          <label htmlFor="sale-mobile-active-quantity">Quantity</label>
+                          <input
+                            className="input"
+                            id="sale-mobile-active-quantity"
+                            min="0"
+                            step="0.01"
+                            type="number"
+                            value={mobileActiveItem.quantity}
+                            onChange={(event) =>
+                              setItem(mobileActiveItemIndex, "quantity", event.target.value)
+                            }
+                            onBlur={(event) => {
+                              const value = event.target.value
+
+                              if (value) {
+                                setItem(
+                                  mobileActiveItemIndex,
+                                  "quantity",
+                                  formatInputNumber(roundQuantity(parseAmount(value))),
+                                )
+                              }
+                            }}
+                          />
+                        </div>
+
+                        <div className="field">
+                          <label htmlFor="sale-mobile-active-price">Unit price</label>
+                          <input
+                            className="input"
+                            id="sale-mobile-active-price"
+                            min="0"
+                            step="0.01"
+                            type="number"
+                            value={mobileActiveItem.price}
+                            onChange={(event) =>
+                              setItem(mobileActiveItemIndex, "price", event.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <Button variant="outline" type="button" onClick={addMobileProductToCheckout}>
+                        <Plus size={16} aria-hidden="true" />
+                        Add product
+                      </Button>
+                    </div>
+
+                    <div className="mobile-checkout-box">
+                      <div className="mobile-sale-section-header">
+                        <div>
+                          <p className="mobile-sale-section-label">Checkout</p>
+                          <h3>{mobileCheckoutItems.length} products</h3>
+                        </div>
+                        <span>{formatCurrency(roundCurrency(totalAmount))}</span>
+                      </div>
+
+                      {mobileCheckoutItems.length === 0 ? (
+                        <p className="mobile-checkout-empty">
+                          Added products will appear here before completing the transaction.
+                        </p>
+                      ) : (
+                        <div className="mobile-checkout-list">
+                          {mobileCheckoutItems.map(({ item, index }) => (
+                            <div className="mobile-checkout-item" key={`${item.product_id}-${index}`}>
+                              <div>
+                                <strong>{getSelectedProductName(products, item.product_id)}</strong>
+                                <span>
+                                  {formatInputNumber(roundQuantity(parseAmount(item.quantity)))}{" "}
+                                  {formatLabel(item.unit)} · {formatCurrency(parseAmount(item.price))}
+                                </span>
+                              </div>
+                              <div className="mobile-checkout-item-actions">
+                                <span>{formatCurrency(roundCurrency(getItemSubtotal(item)))}</span>
+                                <Button
+                                  aria-label="Edit checkout item"
+                                  size="icon"
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => editMobileCheckoutItem(index)}
+                                >
+                                  <Pencil size={15} aria-hidden="true" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <Button type="submit" disabled={saving}>
+                        <Plus size={16} aria-hidden="true" />
+                        {saving ? "Completing" : "Complete transaction"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className={kind === "sale" ? "transaction-items sale-desktop-items" : "transaction-items"}>
                   {items.map((item, index) => (
                     <div className="item-row" key={`${item.product_id}-${index}`}>
                       <div className="item-card-header">
@@ -748,6 +979,7 @@ export function TransactionPage<TRecord extends TransactionRecord>({
                   ))}
                 </div>
                 <Button
+                  className={kind === "sale" ? "sale-desktop-add-item" : undefined}
                   variant="outline"
                   type="button"
                   onClick={() => setItems((current) => [...current, { ...blankItem }])}
@@ -757,10 +989,17 @@ export function TransactionPage<TRecord extends TransactionRecord>({
                 </Button>
               </div>
 
-              <div className="total-strip">
-                <span>Total</span>
-                <span>{formatCurrency(totalAmount)}</span>
-              </div>
+              <div
+                className={
+                  kind === "sale"
+                    ? "transaction-submit-group sale-desktop-submit"
+                    : "transaction-submit-group"
+                }
+              >
+                <div className="total-strip">
+                  <span>Total</span>
+                  <span>{formatCurrency(totalAmount)}</span>
+                </div>
               {kind === "sale" && formValues.payment_status !== "paid" ? (
                 <div className="total-strip">
                   <span>Unpaid balance</span>
@@ -770,19 +1009,26 @@ export function TransactionPage<TRecord extends TransactionRecord>({
                 </div>
               ) : null}
 
-              <Button type="submit" disabled={saving}>
-                <Plus size={16} aria-hidden="true" />
-                {saving ? "Saving" : `Save ${kind}`}
-              </Button>
+                <Button type="submit" disabled={saving}>
+                  <Plus size={16} aria-hidden="true" />
+                  {saving ? "Saving" : `Save ${kind}`}
+                </Button>
+              </div>
             </form>
           </div>
         </section>
+        ) : null}
 
-        <section className="panel">
+        <section
+          className={
+            hideRecordsOnMobile && view === "full"
+              ? "panel mobile-hidden-panel"
+              : "panel"
+          }
+        >
           <div className="panel-header">
             <h2 className="panel-title">Records</h2>
           </div>
-          {error ? <div className="state error">{error}</div> : null}
           {loading ? (
             <div className="state">Loading records...</div>
           ) : records.length === 0 ? (
