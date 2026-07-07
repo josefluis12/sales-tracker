@@ -1,8 +1,5 @@
-import { Link } from "react-router-dom"
-import { BarChart3, ClipboardList } from "lucide-react"
 import { TransactionPage } from "../../../components/common/transaction-page"
 import type { TransactionCreateItem, TransactionCreateValues } from "../../../components/common/transaction-page"
-import { Button } from "../../../components/ui/button"
 import { getActiveProductPrices } from "../../product-prices/services/product-prices-service"
 import { createSaleWithItems, deleteSale, getSales } from "../services/sales-service"
 import type { Sale, SaleCreateValues, SaleItemFormValues } from "../types"
@@ -22,22 +19,6 @@ export function SalesPage() {
       deleteRecord={deleteSale}
       getPriceSuggestions={getActiveProductPrices}
       hideRecordsOnMobile
-      headerActions={
-        <>
-          <Button asChild className="lg:hidden" variant="outline" type="button">
-            <Link to="/sales-records">
-              <ClipboardList size={16} aria-hidden="true" />
-              Sales Records
-            </Link>
-          </Button>
-          <Button asChild variant="outline" type="button">
-            <Link to="/sales-report">
-              <BarChart3 size={16} aria-hidden="true" />
-              Sales Report
-            </Link>
-          </Button>
-        </>
-      }
     />
   )
 }
