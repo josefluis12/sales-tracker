@@ -9,8 +9,8 @@ import {
   ReceiptText,
   ShoppingBasket,
   Store,
+  UserCircle,
 } from "lucide-react"
-import { Button } from "../ui/button"
 import { useAuth } from "../../features/auth/hooks/use-auth"
 import { cn } from "../../lib/utils"
 
@@ -31,8 +31,10 @@ type AppLayoutProps = {
 export function AppLayout({ children }: AppLayoutProps) {
   const { user, signOut } = useAuth()
   const [isMobileNavHidden, setIsMobileNavHidden] = useState(false)
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
   const lastScrollYRef = useRef(0)
   const idleTimerRef = useRef<number | undefined>(undefined)
+  const accountMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const mobileQuery = window.matchMedia("(max-width: 1023px)")
@@ -96,16 +98,80 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
   }, [])
 
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        accountMenuRef.current &&
+        !accountMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsAccountMenuOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsAccountMenuOpen(false)
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown)
+    document.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown)
+      document.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [])
+
   return (
     <div className="app-shell">
       <aside
         className={cn("sidebar", isMobileNavHidden && "sidebar-mobile-hidden")}
       >
         <div className="brand">
-          <div className="brand-mark">VB</div>
-          <div>
-            <p className="brand-title">Vegetable Tracker</p>
-            <p className="brand-subtitle">Sales and expense records</p>
+          <div className="brand-copy">
+            <div className="brand-mark">VB</div>
+            <div>
+              <p className="brand-title">Vegetable Tracker</p>
+              <p className="brand-subtitle">Sales and expense records</p>
+            </div>
+          </div>
+          <div className="account-panel" ref={accountMenuRef}>
+            <div className="account-copy">
+              <span className="account-label">Signed in</span>
+              <span className="account-email">{user?.email}</span>
+            </div>
+            <button
+              type="button"
+              className="profile-menu-button"
+              aria-label="Open account menu"
+              aria-expanded={isAccountMenuOpen}
+              onClick={() => {
+                setIsAccountMenuOpen((isOpen) => !isOpen)
+              }}
+            >
+              <UserCircle aria-hidden="true" />
+            </button>
+            <div
+              className={cn(
+                "account-menu",
+                isAccountMenuOpen && "account-menu-open",
+              )}
+            >
+              <span className="account-menu-label">Signed in</span>
+              <span className="account-menu-email">{user?.email}</span>
+              <button
+                type="button"
+                className="account-menu-action"
+                onClick={() => {
+                  setIsAccountMenuOpen(false)
+                  void signOut()
+                }}
+              >
+                <LogOut aria-hidden="true" />
+                <span>Sign out</span>
+              </button>
+            </div>
           </div>
         </div>
         <nav className="nav-list" aria-label="Main navigation">
@@ -119,6 +185,9 @@ export function AppLayout({ children }: AppLayoutProps) {
                 className={({ isActive }) =>
                   isActive ? "nav-link active" : "nav-link"
                 }
+                onClick={() => {
+                  setIsAccountMenuOpen(false)
+                }}
               >
                 <Icon size={18} aria-hidden="true" />
                 <span>{item.label}</span>
@@ -126,25 +195,6 @@ export function AppLayout({ children }: AppLayoutProps) {
             )
           })}
         </nav>
-        <div className="account-panel">
-          <div className="account-copy">
-            <span className="account-label">Signed in</span>
-            <span className="account-email">{user?.email}</span>
-          </div>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            aria-label="Sign out"
-            className="account-button"
-            onClick={() => {
-              void signOut()
-            }}
-          >
-            <LogOut aria-hidden="true" />
-            <span>Sign out</span>
-          </Button>
-        </div>
       </aside>
       <main className="app-main">{children}</main>
     </div>

@@ -75,7 +75,11 @@
   }
 
   .brand {
-    @apply flex items-center gap-3 px-1 lg:mb-4;
+    @apply flex items-center justify-between gap-3 px-1 lg:mb-4;
+  }
+
+  .brand-copy {
+    @apply flex min-w-0 items-center gap-3;
   }
 
   .brand-mark {
@@ -90,8 +94,12 @@
     @apply mt-0.5 hidden text-xs text-[#bcd0c2] sm:block;
   }
 
+  .mobile-nav-row {
+    @apply flex min-w-0 items-center gap-2 lg:contents;
+  }
+
   .nav-list {
-    @apply -mx-1 flex gap-1 overflow-x-auto pb-1 lg:mx-0 lg:grid lg:gap-1 lg:overflow-visible lg:pb-0;
+    @apply -mx-1 flex min-w-0 gap-1 overflow-x-auto pb-1 lg:mx-0 lg:grid lg:gap-1 lg:overflow-visible lg:pb-0;
     scrollbar-width: none;
   }
 
@@ -108,31 +116,55 @@
   }
 
   .account-panel {
-    @apply flex min-w-0 items-center justify-between gap-2 border-t border-white/10 pt-2 lg:mt-auto lg:grid lg:gap-3 lg:pt-3;
+    @apply relative shrink-0;
   }
 
   .account-copy {
-    @apply grid min-w-0 gap-0.5;
+    @apply hidden;
   }
 
   .account-label {
-    @apply hidden text-xs font-bold text-[#bcd0c2] lg:inline;
+    @apply text-xs font-bold text-[#bcd0c2];
   }
 
   .account-email {
-    @apply max-w-[54vw] truncate text-[11px] font-bold leading-4 text-white sm:max-w-[60vw] sm:text-xs lg:max-w-none lg:text-sm;
+    @apply truncate text-sm font-bold text-white;
   }
 
-  .account-button {
-    @apply h-8 shrink-0 bg-white px-2 text-[#163824] hover:bg-[#d7f2c4] lg:h-9 lg:w-full lg:px-3;
+  .profile-menu-button {
+    @apply inline-grid h-10 w-10 place-items-center rounded-md border border-white/10 bg-white/10 text-white transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70;
   }
 
-  .account-button span {
-    @apply hidden lg:inline;
+  .profile-menu-button svg {
+    @apply h-5 w-5;
+  }
+
+  .account-menu {
+    @apply pointer-events-none absolute right-0 top-12 z-30 grid w-64 translate-y-1 gap-2 rounded-lg border border-white/10 bg-[#f8fff5] p-3 text-[#163824] opacity-0 shadow-xl transition duration-150;
+  }
+
+  .account-menu-open {
+    @apply pointer-events-auto translate-y-0 opacity-100;
+  }
+
+  .account-menu-label {
+    @apply text-xs font-bold uppercase tracking-normal text-[#5a7662];
+  }
+
+  .account-menu-email {
+    @apply truncate text-sm font-extrabold text-[#163824];
+  }
+
+  .account-menu-action {
+    @apply mt-1 inline-flex h-9 items-center justify-center gap-2 rounded-md bg-[#163824] px-3 text-sm font-semibold text-white transition-colors hover:bg-[#256f46] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#256f46];
+  }
+
+  .account-menu-action svg {
+    @apply h-4 w-4;
   }
 
   .app-main {
-    @apply min-w-0 px-4 pb-5 pt-40 sm:px-5 md:px-6 lg:ml-64 lg:h-screen lg:overflow-y-auto lg:px-8 lg:py-7;
+    @apply min-w-0 px-4 pb-5 pt-32 sm:px-5 md:px-6 lg:ml-64 lg:h-screen lg:overflow-y-auto lg:px-8 lg:py-7;
   }
 
   .page-header {
