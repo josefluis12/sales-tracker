@@ -11,7 +11,7 @@ import { formatCurrency, formatDate, formatLabel } from "../../lib/formatters"
 import { getErrorMessage, todayIsoDate } from "../../lib/utils"
 import { getProducts } from "../../features/products/services/products-service"
 import { getSuppliers } from "../../features/suppliers/services/suppliers-service"
-import type { Product, Purchase, Sale, Supplier } from "../../types/database"
+import type { Product, ProductPrice, Purchase, Sale, Supplier } from "../../types/database"
 import { Button } from "../ui/button"
 
 type ItemDraft = {
@@ -52,6 +52,7 @@ type TransactionPageProps<TRecord extends TransactionRecord> = {
   getRecords: () => Promise<TRecord[]>
   createRecord: (values: TransactionCreateValues, items: TransactionCreateItem[]) => Promise<TRecord>
   deleteRecord: (id: string) => Promise<void>
+  getPriceSuggestions?: () => Promise<ProductPrice[]>
 }
 
 const blankItem: ItemDraft = {
@@ -68,9 +69,11 @@ export function TransactionPage<TRecord extends TransactionRecord>({
   getRecords,
   createRecord,
   deleteRecord,
+  getPriceSuggestions,
 }: TransactionPageProps<TRecord>) {
   const [records, setRecords] = useState<TRecord[]>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [priceSuggestions, setPriceSuggestions] = useState<ProductPrice[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [items, setItems] = useState<ItemDraft[]>([{ ...blankItem }])
   const [loading, setLoading] = useState(true)
@@ -95,20 +98,22 @@ export function TransactionPage<TRecord extends TransactionRecord>({
     setError(null)
 
     try {
-      const [nextRecords, nextProducts, nextSuppliers] = await Promise.all([
+      const [nextRecords, nextProducts, nextSuppliers, nextPriceSuggestions] = await Promise.all([
         getRecords(),
         getProducts(),
         kind === "purchase" ? getSuppliers() : Promise.resolve([]),
+        getPriceSuggestions ? getPriceSuggestions() : Promise.resolve([]),
       ])
       setRecords(nextRecords)
       setProducts(nextProducts)
       setSuppliers(nextSuppliers)
+      setPriceSuggestions(nextPriceSuggestions)
     } catch (loadError) {
       setError(getErrorMessage(loadError))
     } finally {
       setLoading(false)
     }
-  }, [getRecords, kind])
+  }, [getPriceSuggestions, getRecords, kind])
 
   useEffect(() => {
     void Promise.resolve().then(loadData)
@@ -116,19 +121,34 @@ export function TransactionPage<TRecord extends TransactionRecord>({
 
   function setItem(index: number, key: keyof ItemDraft, value: string) {
     setItems((current) =>
-      current.map((item, itemIndex) =>
-        itemIndex === index
-          ? {
-              ...item,
-              [key]:
-                key === "quantity" || key === "price"
-                  ? Number(value || 0)
-                  : key === "unit"
-                    ? (value as Unit)
-                    : value,
-            }
-          : item,
-      ),
+      current.map((item, itemIndex) => {
+        if (itemIndex !== index) {
+          return item
+        }
+
+        if (kind === "sale" && key === "product_id") {
+          const suggestion = priceSuggestions.find(
+            (priceSuggestion) => priceSuggestion.product_id === value,
+          )
+
+          return {
+            ...item,
+            product_id: value,
+            unit: suggestion?.unit ?? item.unit,
+            price: suggestion?.selling_price ?? item.price,
+          }
+        }
+
+        return {
+          ...item,
+          [key]:
+            key === "quantity" || key === "price"
+              ? Number(value || 0)
+              : key === "unit"
+                ? (value as Unit)
+                : value,
+        }
+      }),
     )
   }
 
@@ -223,7 +243,7 @@ export function TransactionPage<TRecord extends TransactionRecord>({
         </Button>
       </header>
 
-      <div className="content-grid">
+      <div className="content-grid transaction-grid">
         <section className="panel">
           <div className="panel-header">
             <h2 className="panel-title">New {kind}</h2>

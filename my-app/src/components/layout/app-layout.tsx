@@ -1,4 +1,4 @@
-import type { ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { NavLink } from "react-router-dom"
 import {
   Banknote,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 import { Button } from "../ui/button"
 import { useAuth } from "../../features/auth/hooks/use-auth"
+import { cn } from "../../lib/utils"
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: Gauge },
@@ -29,10 +30,77 @@ type AppLayoutProps = {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { user, signOut } = useAuth()
+  const [isMobileNavHidden, setIsMobileNavHidden] = useState(false)
+  const lastScrollYRef = useRef(0)
+  const idleTimerRef = useRef<number | undefined>(undefined)
+
+  useEffect(() => {
+    const mobileQuery = window.matchMedia("(max-width: 1023px)")
+
+    const clearIdleTimer = () => {
+      if (idleTimerRef.current !== undefined) {
+        window.clearTimeout(idleTimerRef.current)
+        idleTimerRef.current = undefined
+      }
+    }
+
+    const scheduleIdleHide = () => {
+      clearIdleTimer()
+
+      if (!mobileQuery.matches || window.scrollY <= 24) {
+        setIsMobileNavHidden(false)
+        return
+      }
+
+      idleTimerRef.current = window.setTimeout(() => {
+        setIsMobileNavHidden(true)
+      }, 2000)
+    }
+
+    const handleScroll = () => {
+      const currentScrollY = Math.max(window.scrollY, 0)
+
+      if (!mobileQuery.matches) {
+        lastScrollYRef.current = currentScrollY
+        setIsMobileNavHidden(false)
+        clearIdleTimer()
+        return
+      }
+
+      const isScrollingUp = currentScrollY < lastScrollYRef.current
+
+      if (isScrollingUp || currentScrollY <= 24) {
+        setIsMobileNavHidden(false)
+      }
+
+      lastScrollYRef.current = currentScrollY
+      scheduleIdleHide()
+    }
+
+    const handleViewportChange = () => {
+      lastScrollYRef.current = Math.max(window.scrollY, 0)
+      setIsMobileNavHidden(false)
+      scheduleIdleHide()
+    }
+
+    lastScrollYRef.current = Math.max(window.scrollY, 0)
+    scheduleIdleHide()
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    mobileQuery.addEventListener("change", handleViewportChange)
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+      mobileQuery.removeEventListener("change", handleViewportChange)
+      clearIdleTimer()
+    }
+  }, [])
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <aside
+        className={cn("sidebar", isMobileNavHidden && "sidebar-mobile-hidden")}
+      >
         <div className="brand">
           <div className="brand-mark">VB</div>
           <div>
@@ -67,6 +135,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             type="button"
             variant="secondary"
             size="sm"
+            aria-label="Sign out"
             className="account-button"
             onClick={() => {
               void signOut()

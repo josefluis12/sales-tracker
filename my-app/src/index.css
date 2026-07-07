@@ -63,11 +63,15 @@
 
 @layer components {
   .app-shell {
-    @apply grid min-h-screen grid-cols-1 bg-background lg:grid-cols-[16rem_minmax(0,1fr)];
+    @apply min-h-screen bg-background lg:h-screen lg:overflow-hidden;
   }
 
   .sidebar {
-    @apply sticky top-0 z-20 flex flex-col gap-3 border-b border-white/10 bg-[#163824] px-3 py-3 text-[#eef8ef] shadow-lg lg:fixed lg:inset-y-0 lg:w-64 lg:border-b-0 lg:border-r lg:px-4 lg:py-6;
+    @apply fixed inset-x-0 top-0 z-20 flex flex-col gap-2 border-b border-white/10 bg-[#163824] px-3 py-3 text-[#eef8ef] shadow-lg transition-transform duration-300 ease-out lg:inset-y-0 lg:right-auto lg:w-64 lg:translate-y-0 lg:gap-3 lg:border-b-0 lg:border-r lg:px-4 lg:py-6;
+  }
+
+  .sidebar-mobile-hidden {
+    @apply -translate-y-full lg:translate-y-0;
   }
 
   .brand {
@@ -104,7 +108,7 @@
   }
 
   .account-panel {
-    @apply flex items-center justify-between gap-3 border-t border-white/10 pt-3 lg:mt-auto lg:grid;
+    @apply flex min-w-0 items-center justify-between gap-2 border-t border-white/10 pt-2 lg:mt-auto lg:grid lg:gap-3 lg:pt-3;
   }
 
   .account-copy {
@@ -112,19 +116,23 @@
   }
 
   .account-label {
-    @apply text-xs font-bold text-[#bcd0c2];
+    @apply hidden text-xs font-bold text-[#bcd0c2] lg:inline;
   }
 
   .account-email {
-    @apply truncate text-xs font-bold text-white sm:text-sm;
+    @apply max-w-[54vw] truncate text-[11px] font-bold leading-4 text-white sm:max-w-[60vw] sm:text-xs lg:max-w-none lg:text-sm;
   }
 
   .account-button {
-    @apply shrink-0 bg-white text-[#163824] hover:bg-[#d7f2c4] lg:w-full;
+    @apply h-8 shrink-0 bg-white px-2 text-[#163824] hover:bg-[#d7f2c4] lg:h-9 lg:w-full lg:px-3;
+  }
+
+  .account-button span {
+    @apply hidden lg:inline;
   }
 
   .app-main {
-    @apply min-w-0 px-4 py-5 sm:px-5 md:px-6 lg:ml-64 lg:px-8 lg:py-7;
+    @apply min-w-0 px-4 pb-5 pt-40 sm:px-5 md:px-6 lg:ml-64 lg:h-screen lg:overflow-y-auto lg:px-8 lg:py-7;
   }
 
   .page-header {
@@ -141,6 +149,10 @@
 
   .content-grid {
     @apply grid grid-cols-1 gap-4 xl:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)] xl:items-start;
+  }
+
+  .transaction-grid {
+    @apply xl:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)];
   }
 
   .panel {
@@ -230,7 +242,7 @@
   }
 
   .item-row {
-    @apply grid grid-cols-1 gap-2 rounded-lg border bg-muted/20 p-3 md:grid-cols-[minmax(0,1fr)_5.5rem_6rem_7rem_2.5rem] md:items-end md:border-0 md:bg-transparent md:p-0;
+    @apply grid grid-cols-1 gap-2 rounded-lg border bg-muted/20 p-3 lg:grid-cols-[minmax(10rem,1fr)_5.5rem_6rem_7rem_2.5rem] lg:items-end lg:border-0 lg:bg-transparent lg:p-0;
   }
 
   .total-strip {

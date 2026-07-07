@@ -30,6 +30,16 @@ http://localhost:5173
 If email confirmation is enabled, new users must confirm their email before
 they can sign in.
 
+## Supabase Database
+
+Run the SQL files in `supabase/migrations` against your Supabase project before
+using the app. For an existing database that is missing sale payment columns,
+run:
+
+```txt
+supabase/migrations/202607070001_add_sales_payment_columns.sql
+```
+
 ## Run Locally
 
 ```bash

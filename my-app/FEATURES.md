@@ -8,9 +8,11 @@ mobile-friendly signed-in account area with sign out.
 
 ## Dashboard
 
-Shows today's sales, purchases, expenses, and net profit.
+Shows today's sales, purchases, expenses, and net profit, plus all-time investment,
+recovered sales, expenses, and profit totals. The dashboard also lists daily
+records for investment, total daily expense, recovered sales, and profit.
 
-Net Profit = Sales - Purchases - Expenses
+Profit = Recovered Sales - Investment - Expenses
 
 ## Products
 
@@ -18,7 +20,7 @@ Create, edit, delete, and list product names.
 
 ## Product Prices
 
-Create, edit, delete, and list suggested selling prices by product and unit.
+Create, edit, delete, and list one suggested selling price per product for sale entry.
 
 ## Suppliers
 

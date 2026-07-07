@@ -23,10 +23,11 @@ The app expects these Supabase tables:
 ## Business Rules
 
 - `products` stores item names only.
-- `product_prices` stores suggested selling prices by unit.
+- `product_prices` stores one suggested selling price per product for sale entry.
 - `sale_items.unit_price` stores the actual price charged during the sale.
 - `purchase_items.unit_cost` stores the actual buying cost.
 - Product prices may change, but old sale records keep their original unit price.
+- `product_prices.product_id` should be unique so each product has only one current suggested price.
 - Purchases and sales may use different units.
 - V1 does not perform unit conversion or inventory deduction.
 

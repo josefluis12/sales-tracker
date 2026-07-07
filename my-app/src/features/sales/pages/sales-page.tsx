@@ -1,5 +1,6 @@
 import { TransactionPage } from "../../../components/common/transaction-page"
 import type { TransactionCreateItem, TransactionCreateValues } from "../../../components/common/transaction-page"
+import { getActiveProductPrices } from "../../product-prices/services/product-prices-service"
 import { createSaleWithItems, deleteSale, getSales } from "../services/sales-service"
 import type { Sale, SaleFormValues, SaleItemFormValues } from "../types"
 
@@ -16,6 +17,7 @@ export function SalesPage() {
       getRecords={getSales}
       createRecord={saveSale}
       deleteRecord={deleteSale}
+      getPriceSuggestions={getActiveProductPrices}
     />
   )
 }

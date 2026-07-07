@@ -6,9 +6,10 @@ import {
   createProductPrice,
   deleteProductPrice,
   getProductPrices,
+  type ProductPriceWithProductName,
   updateProductPrice,
 } from "../services/product-prices-service"
-import type { ProductPrice, ProductPriceFormValues } from "../types"
+import type { ProductPriceFormValues } from "../types"
 
 const initialValues: ProductPriceFormValues = {
   product_id: "",
@@ -27,9 +28,9 @@ export function ProductPricesPage() {
   }, [])
 
   return (
-    <CrudPage<ProductPrice, ProductPriceFormValues>
+    <CrudPage<ProductPriceWithProductName, ProductPriceFormValues>
       title="Product Prices"
-      description="Store suggested selling prices by unit without changing old sale item prices."
+      description="Store one suggested selling price per product for sales, without changing old sale item prices."
       createLabel="Add Price"
       emptyMessage="No suggested prices yet."
       initialValues={initialValues}
@@ -46,7 +47,7 @@ export function ProductPricesPage() {
         { name: "is_active", label: "Active", type: "checkbox" },
       ]}
       columns={[
-        { key: "product_id", label: "Product ID" },
+        { key: "product_name", label: "Product" },
         { key: "unit", label: "Unit", format: "label" },
         { key: "selling_price", label: "Suggested Price", format: "currency" },
         { key: "is_active", label: "Status", format: "boolean" },
