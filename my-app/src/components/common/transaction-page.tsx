@@ -16,9 +16,9 @@ import { Button } from "../ui/button"
 
 type ItemDraft = {
   product_id: string
-  quantity: number
+  quantity: string
   unit: Unit
-  price: number
+  price: string
 }
 
 type TransactionRecord = Purchase | Sale
@@ -57,9 +57,13 @@ type TransactionPageProps<TRecord extends TransactionRecord> = {
 
 const blankItem: ItemDraft = {
   product_id: "",
-  quantity: 1,
+  quantity: "1",
   unit: "kg",
-  price: 0,
+  price: "",
+}
+
+function parseAmount(value: string) {
+  return Number(value || 0)
 }
 
 export function TransactionPage<TRecord extends TransactionRecord>({
@@ -89,9 +93,15 @@ export function TransactionPage<TRecord extends TransactionRecord>({
   })
 
   const totalAmount = useMemo(
-    () => items.reduce((sum, item) => sum + item.quantity * item.price, 0),
+    () =>
+      items.reduce(
+        (sum, item) => sum + parseAmount(item.quantity) * parseAmount(item.price),
+        0,
+      ),
     [items],
   )
+
+  const itemPriceLabel = kind === "purchase" ? "Unit cost" : "Unit price"
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -135,7 +145,10 @@ export function TransactionPage<TRecord extends TransactionRecord>({
             ...item,
             product_id: value,
             unit: suggestion?.unit ?? item.unit,
-            price: suggestion?.selling_price ?? item.price,
+            price:
+              suggestion?.selling_price === undefined
+                ? item.price
+                : String(suggestion.selling_price),
           }
         }
 
@@ -143,7 +156,7 @@ export function TransactionPage<TRecord extends TransactionRecord>({
           ...item,
           [key]:
             key === "quantity" || key === "price"
-              ? Number(value || 0)
+              ? value
               : key === "unit"
                 ? (value as Unit)
                 : value,
@@ -162,7 +175,9 @@ export function TransactionPage<TRecord extends TransactionRecord>({
     setError(null)
 
     try {
-      const cleanItems = items.filter((item) => item.product_id && item.quantity > 0)
+      const cleanItems = items.filter(
+        (item) => item.product_id && parseAmount(item.quantity) > 0,
+      )
 
       if (cleanItems.length === 0) {
         throw new Error("Add at least one item.")
@@ -188,15 +203,15 @@ export function TransactionPage<TRecord extends TransactionRecord>({
         kind === "purchase"
           ? {
               product_id: item.product_id,
-              quantity: item.quantity,
+              quantity: parseAmount(item.quantity),
               unit: item.unit,
-              unit_cost: item.price,
+              unit_cost: parseAmount(item.price),
             }
           : {
               product_id: item.product_id,
-              quantity: item.quantity,
+              quantity: parseAmount(item.quantity),
               unit: item.unit,
-              unit_price: item.price,
+              unit_price: parseAmount(item.price),
             },
       )
 
@@ -366,49 +381,66 @@ export function TransactionPage<TRecord extends TransactionRecord>({
                 <div className="form-grid">
                   {items.map((item, index) => (
                     <div className="item-row" key={`${item.product_id}-${index}`}>
-                      <select
-                        className="select"
-                        required
-                        value={item.product_id}
-                        onChange={(event) => setItem(index, "product_id", event.target.value)}
-                      >
-                        <option value="">Product</option>
-                        {products.map((product) => (
-                          <option key={product.id} value={product.id}>
-                            {product.name}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        className="input"
-                        min="0"
-                        step="0.01"
-                        type="number"
-                        value={item.quantity}
-                        onChange={(event) => setItem(index, "quantity", event.target.value)}
-                      />
-                      <select
-                        className="select"
-                        value={item.unit}
-                        onChange={(event) => setItem(index, "unit", event.target.value)}
-                      >
-                        {UNITS.map((unit) => (
-                          <option key={unit} value={unit}>
-                            {formatLabel(unit)}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        className="input"
-                        min="0"
-                        step="0.01"
-                        type="number"
-                        value={item.price}
-                        onChange={(event) => setItem(index, "price", event.target.value)}
-                      />
+                      <div className="field">
+                        <label htmlFor={`${kind}-item-${index}-product`}>Product</label>
+                        <select
+                          className="select"
+                          id={`${kind}-item-${index}-product`}
+                          required
+                          value={item.product_id}
+                          onChange={(event) => setItem(index, "product_id", event.target.value)}
+                        >
+                          <option value="">Select product</option>
+                          {products.map((product) => (
+                            <option key={product.id} value={product.id}>
+                              {product.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="field">
+                        <label htmlFor={`${kind}-item-${index}-quantity`}>Quantity</label>
+                        <input
+                          className="input"
+                          id={`${kind}-item-${index}-quantity`}
+                          min="0"
+                          step="0.01"
+                          type="number"
+                          value={item.quantity}
+                          onChange={(event) => setItem(index, "quantity", event.target.value)}
+                        />
+                      </div>
+                      <div className="field">
+                        <label htmlFor={`${kind}-item-${index}-unit`}>Unit</label>
+                        <select
+                          className="select"
+                          id={`${kind}-item-${index}-unit`}
+                          value={item.unit}
+                          onChange={(event) => setItem(index, "unit", event.target.value)}
+                        >
+                          {UNITS.map((unit) => (
+                            <option key={unit} value={unit}>
+                              {formatLabel(unit)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="field">
+                        <label htmlFor={`${kind}-item-${index}-price`}>{itemPriceLabel}</label>
+                        <input
+                          className="input"
+                          id={`${kind}-item-${index}-price`}
+                          min="0"
+                          step="0.01"
+                          type="number"
+                          value={item.price}
+                          onChange={(event) => setItem(index, "price", event.target.value)}
+                        />
+                      </div>
                       <Button
                         variant="outline"
                         size="icon"
+                        aria-label="Remove item"
                         disabled={items.length === 1}
                         type="button"
                         onClick={() => removeItem(index)}

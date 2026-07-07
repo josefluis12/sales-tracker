@@ -4,18 +4,16 @@ import { Button } from "../../../components/ui/button"
 import { formatCurrency, formatDate } from "../../../lib/formatters"
 import { getErrorMessage } from "../../../lib/utils"
 import { getDashboardSummary } from "../services/dashboard-service"
-import type { DashboardSummary } from "../types"
+import type { DashboardSummary, DashboardTopProduct } from "../types"
 
 const emptySummary: DashboardSummary = {
   salesToday: 0,
   purchasesToday: 0,
   expensesToday: 0,
   netProfitToday: 0,
-  totalInvestment: 0,
-  totalRecovered: 0,
-  totalExpenses: 0,
-  totalProfit: 0,
-  dailyRecords: [],
+  topByQuantity: [],
+  frequentlyBought: [],
+  mostProfitable: [],
 }
 
 const todayCards = [
@@ -25,12 +23,57 @@ const todayCards = [
   { key: "netProfitToday", label: "Net Profit Today" },
 ] as const
 
-const totalCards = [
-  { key: "totalInvestment", label: "Total Investment" },
-  { key: "totalRecovered", label: "Total Recovered" },
-  { key: "totalExpenses", label: "Total Expenses" },
-  { key: "totalProfit", label: "Profit" },
-] as const
+type TopProductsTableProps = {
+  title: string
+  products: DashboardTopProduct[]
+  loading: boolean
+  valueLabel: string
+  renderValue: (product: DashboardTopProduct) => string
+}
+
+function TopProductsTable({
+  title,
+  products,
+  loading,
+  valueLabel,
+  renderValue,
+}: TopProductsTableProps) {
+  return (
+    <section className="panel">
+      <div className="panel-header">
+        <h3 className="panel-title">{title}</h3>
+      </div>
+      {loading ? (
+        <div className="state">Loading products...</div>
+      ) : products.length === 0 ? (
+        <div className="state">No sales items today.</div>
+      ) : (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Product</th>
+                <th scope="col">Unit</th>
+                <th scope="col">{valueLabel}</th>
+                <th scope="col">Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((product) => (
+                <tr key={`${product.productId}-${product.unit}`}>
+                  <td data-label="Product">{product.productName}</td>
+                  <td data-label="Unit">{product.unit}</td>
+                  <td data-label={valueLabel}>{renderValue(product)}</td>
+                  <td data-label="Revenue">{formatCurrency(product.revenue)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )
+}
 
 export function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary>(emptySummary)
@@ -83,53 +126,35 @@ export function DashboardPage() {
         ))}
       </section>
 
-      <section className="summary-grid" aria-label="Business totals">
-        {totalCards.map((card) => (
-          <article className="summary-card" key={card.key}>
-            <p className="summary-label">{card.label}</p>
-            <p className="summary-value">
-              {loading ? "Loading..." : formatCurrency(summary[card.key])}
-            </p>
-          </article>
-        ))}
-      </section>
-
-      <section className="panel">
-        <div className="panel-header">
-          <h2 className="panel-title">Daily Records</h2>
+      <section aria-labelledby="top-sellers-title">
+        <div className="mb-3">
+          <h2 className="panel-title" id="top-sellers-title">
+            Today's Top Sellers
+          </h2>
         </div>
-        {loading ? (
-          <div className="state">Loading daily records...</div>
-        ) : summary.dailyRecords.length === 0 ? (
-          <div className="state">No daily records yet.</div>
-        ) : (
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th scope="col">Date</th>
-                  <th scope="col">Investment</th>
-                  <th scope="col">Total Daily Expense</th>
-                  <th scope="col">Recovered</th>
-                  <th scope="col">Profit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summary.dailyRecords.map((record) => (
-                  <tr key={record.date}>
-                    <td data-label="Date">{formatDate(record.date)}</td>
-                    <td data-label="Investment">{formatCurrency(record.investment)}</td>
-                    <td data-label="Total Daily Expense">
-                      {formatCurrency(record.totalDailyExpense)}
-                    </td>
-                    <td data-label="Recovered">{formatCurrency(record.recovered)}</td>
-                    <td data-label="Profit">{formatCurrency(record.profit)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div className="grid grid-cols-1 gap-4 py-4 xl:grid-cols-3">
+          <TopProductsTable
+            title="Quantity Bought"
+            products={summary.topByQuantity}
+            loading={loading}
+            valueLabel="Quantity"
+            renderValue={(product) => product.quantitySold.toLocaleString("en-PH")}
+          />
+          <TopProductsTable
+            title="Frequently Bought"
+            products={summary.frequentlyBought}
+            loading={loading}
+            valueLabel="Times Bought"
+            renderValue={(product) => product.timesBought.toLocaleString("en-PH")}
+          />
+          <TopProductsTable
+            title="Most Profitable"
+            products={summary.mostProfitable}
+            loading={loading}
+            valueLabel="Est. Profit"
+            renderValue={(product) => formatCurrency(product.estimatedProfit)}
+          />
+        </div>
       </section>
     </>
   )

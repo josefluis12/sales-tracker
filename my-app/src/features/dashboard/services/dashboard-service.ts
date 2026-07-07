@@ -1,70 +1,129 @@
 import { supabase } from "../../../lib/supabase"
 import { todayIsoDate } from "../../../lib/utils"
-import type { DashboardDailyRecord, DashboardSummary } from "../types"
+import type { DashboardSummary, DashboardTopProduct } from "../types"
 
-type DatedAmountRow = {
-  date: string
-  amount: number
+type ProductSalesTotals = {
+  productId: string
+  productName: string
+  unit: string
+  quantitySold: number
+  timesBought: number
+  revenue: number
 }
 
-type DailyTotals = {
-  investment: number
-  totalDailyExpense: number
-  recovered: number
+type ProductCostTotals = {
+  totalCost: number
+  quantity: number
 }
+
+const topProductLimit = 5
 
 function sumAmounts(rows: { total_amount?: number | null; amount?: number | null }[]) {
   return rows.reduce((sum, row) => sum + (row.total_amount ?? row.amount ?? 0), 0)
 }
 
-function addAmountByDate(
-  totalsByDate: Map<string, DailyTotals>,
-  date: string,
-  key: keyof DailyTotals,
-  amount: number,
-) {
-  const totals = totalsByDate.get(date) ?? {
-    investment: 0,
-    totalDailyExpense: 0,
-    recovered: 0,
-  }
-
-  totals[key] += amount
-  totalsByDate.set(date, totals)
+function getProductUnitKey(productId: string, unit: string) {
+  return `${productId}:${unit}`
 }
 
-function createDailyRecords(
-  sales: DatedAmountRow[],
-  purchases: DatedAmountRow[],
-  expenses: DatedAmountRow[],
+function sortAndLimitTopProducts(
+  products: DashboardTopProduct[],
+  key: keyof Pick<
+    DashboardTopProduct,
+    "quantitySold" | "timesBought" | "estimatedProfit"
+  >,
 ) {
-  const totalsByDate = new Map<string, DailyTotals>()
+  return [...products]
+    .sort((first, second) => {
+      const valueDifference = second[key] - first[key]
 
-  sales.forEach((sale) => {
-    addAmountByDate(totalsByDate, sale.date, "recovered", sale.amount)
+      if (valueDifference !== 0) {
+        return valueDifference
+      }
+
+      return second.revenue - first.revenue
+    })
+    .slice(0, topProductLimit)
+}
+
+function createTopProductLists(
+  products: { id: string; name: string }[],
+  saleItems: {
+    sale_id: string
+    product_id: string
+    quantity: number
+    unit: string
+    subtotal: number
+  }[],
+  purchaseItems: {
+    product_id: string
+    quantity: number
+    unit: string
+    subtotal: number
+  }[],
+  todaySaleIds: Set<string>,
+) {
+  const productNames = new Map(products.map((product) => [product.id, product.name]))
+  const salesByProductUnit = new Map<string, ProductSalesTotals>()
+  const costsByProductUnit = new Map<string, ProductCostTotals>()
+
+  saleItems.forEach((item) => {
+    if (!todaySaleIds.has(item.sale_id)) {
+      return
+    }
+
+    const key = getProductUnitKey(item.product_id, item.unit)
+    const existing = salesByProductUnit.get(key) ?? {
+      productId: item.product_id,
+      productName: productNames.get(item.product_id) ?? "Unknown product",
+      unit: item.unit,
+      quantitySold: 0,
+      timesBought: 0,
+      revenue: 0,
+    }
+
+    existing.quantitySold += item.quantity
+    existing.timesBought += 1
+    existing.revenue += item.subtotal
+    salesByProductUnit.set(key, existing)
   })
 
-  purchases.forEach((purchase) => {
-    addAmountByDate(totalsByDate, purchase.date, "investment", purchase.amount)
+  purchaseItems.forEach((item) => {
+    const key = getProductUnitKey(item.product_id, item.unit)
+    const existing = costsByProductUnit.get(key) ?? {
+      totalCost: 0,
+      quantity: 0,
+    }
+
+    existing.totalCost += item.subtotal
+    existing.quantity += item.quantity
+    costsByProductUnit.set(key, existing)
   })
 
-  expenses.forEach((expense) => {
-    addAmountByDate(totalsByDate, expense.date, "totalDailyExpense", expense.amount)
-  })
+  const topProducts = Array.from(salesByProductUnit.entries()).map<DashboardTopProduct>(
+    ([key, item]) => {
+      const costTotals = costsByProductUnit.get(key)
+      const averageUnitCost =
+        costTotals && costTotals.quantity > 0 ? costTotals.totalCost / costTotals.quantity : 0
 
-  return Array.from(totalsByDate.entries())
-    .map<DashboardDailyRecord>(([date, totals]) => ({
-      date,
-      ...totals,
-      profit: totals.recovered - totals.investment - totals.totalDailyExpense,
-    }))
-    .sort((first, second) => second.date.localeCompare(first.date))
+      return {
+        ...item,
+        estimatedProfit: item.revenue - item.quantitySold * averageUnitCost,
+      }
+    },
+  )
+
+  return {
+    topByQuantity: sortAndLimitTopProducts(topProducts, "quantitySold"),
+    frequentlyBought: sortAndLimitTopProducts(topProducts, "timesBought"),
+    mostProfitable: sortAndLimitTopProducts(topProducts, "estimatedProfit"),
+  }
 }
 
 export async function getDashboardSummary(): Promise<DashboardSummary> {
   const today = todayIsoDate()
-  const [sales, purchases, expenses] = await Promise.all([
-    supabase.from("sales").select("sale_date,total_amount").order("sale_date", {
+  const [sales, purchases, expenses, products, saleItems, purchaseItems] = await Promise.all([
+    supabase.from("sales").select("id,sale_date,total_amount").order("sale_date", {
       ascending: false,
     }),
     supabase.from("purchases").select("purchase_date,total_amount").order("purchase_date", {
@@ -73,6 +132,9 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     supabase.from("expenses").select("expense_date,amount").order("expense_date", {
       ascending: false,
     }),
+    supabase.from("products").select("id,name"),
+    supabase.from("sale_items").select("sale_id,product_id,quantity,unit,subtotal"),
+    supabase.from("purchase_items").select("product_id,quantity,unit,subtotal"),
   ])
 
   if (sales.error) {
@@ -87,39 +149,39 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     throw new Error(expenses.error.message)
   }
 
-  const saleRows = sales.data.map((sale) => ({
-    date: sale.sale_date,
-    amount: sale.total_amount,
-  }))
-  const purchaseRows = purchases.data.map((purchase) => ({
-    date: purchase.purchase_date,
-    amount: purchase.total_amount,
-  }))
-  const expenseRows = expenses.data.map((expense) => ({
-    date: expense.expense_date,
-    amount: expense.amount,
-  }))
+  if (products.error) {
+    throw new Error(products.error.message)
+  }
 
-  const salesToday = sumAmounts(sales.data.filter((sale) => sale.sale_date === today))
+  if (saleItems.error) {
+    throw new Error(saleItems.error.message)
+  }
+
+  if (purchaseItems.error) {
+    throw new Error(purchaseItems.error.message)
+  }
+
+  const todaySales = sales.data.filter((sale) => sale.sale_date === today)
+  const todaySaleIds = new Set(todaySales.map((sale) => sale.id))
+  const salesToday = sumAmounts(todaySales)
   const purchasesToday = sumAmounts(
     purchases.data.filter((purchase) => purchase.purchase_date === today),
   )
   const expensesToday = sumAmounts(
     expenses.data.filter((expense) => expense.expense_date === today),
   )
-  const totalRecovered = sumAmounts(sales.data)
-  const totalInvestment = sumAmounts(purchases.data)
-  const totalExpenses = sumAmounts(expenses.data)
+  const topProductLists = createTopProductLists(
+    products.data,
+    saleItems.data,
+    purchaseItems.data,
+    todaySaleIds,
+  )
 
   return {
     salesToday,
     purchasesToday,
     expensesToday,
     netProfitToday: salesToday - purchasesToday - expensesToday,
-    totalInvestment,
-    totalRecovered,
-    totalExpenses,
-    totalProfit: totalRecovered - totalInvestment - totalExpenses,
-    dailyRecords: createDailyRecords(saleRows, purchaseRows, expenseRows),
+    ...topProductLists,
   }
 }

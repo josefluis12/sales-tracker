@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react"
 import { NavLink } from "react-router-dom"
 import {
   Banknote,
@@ -6,6 +6,7 @@ import {
   LogOut,
   Package,
   PhilippinePeso,
+  PlusCircle,
   ReceiptText,
   ShoppingBasket,
   Store,
@@ -24,6 +25,14 @@ const navItems = [
   { to: "/expenses", label: "Expenses", icon: ReceiptText },
 ]
 
+const mobileNavItems = [
+  { to: "/", label: "Home", icon: Gauge },
+  { to: "/purchases", label: "Purchases", icon: ShoppingBasket },
+  { to: "/sales", label: "Create Sales", icon: PlusCircle, isPrimary: true },
+  { to: "/expenses", label: "Expenses", icon: ReceiptText },
+  { to: "/products", label: "Products", icon: Package },
+]
+
 type AppLayoutProps = {
   children: ReactNode
 }
@@ -34,7 +43,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
   const lastScrollYRef = useRef(0)
   const idleTimerRef = useRef<number | undefined>(undefined)
-  const accountMenuRef = useRef<HTMLDivElement>(null)
+  const desktopAccountMenuRef = useRef<HTMLDivElement>(null)
+  const mobileAccountMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const mobileQuery = window.matchMedia("(max-width: 1023px)")
@@ -100,9 +110,11 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node
+
       if (
-        accountMenuRef.current &&
-        !accountMenuRef.current.contains(event.target as Node)
+        !desktopAccountMenuRef.current?.contains(target) &&
+        !mobileAccountMenuRef.current?.contains(target)
       ) {
         setIsAccountMenuOpen(false)
       }
@@ -123,11 +135,60 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
   }, [])
 
+  const renderAccountPanel = (ref: RefObject<HTMLDivElement | null>) => (
+    <div className="account-panel" ref={ref}>
+      <div className="account-copy">
+        <span className="account-label">Signed in</span>
+        <span className="account-email">{user?.email}</span>
+      </div>
+      <button
+        type="button"
+        className="profile-menu-button"
+        aria-label="Open account menu"
+        aria-expanded={isAccountMenuOpen}
+        onClick={() => {
+          setIsAccountMenuOpen((isOpen) => !isOpen)
+        }}
+      >
+        <UserCircle aria-hidden="true" />
+      </button>
+      <div
+        className={cn(
+          "account-menu",
+          isAccountMenuOpen && "account-menu-open",
+        )}
+      >
+        <span className="account-menu-label">Signed in</span>
+        <span className="account-menu-email">{user?.email}</span>
+        <button
+          type="button"
+          className="account-menu-action"
+          onClick={() => {
+            setIsAccountMenuOpen(false)
+            void signOut()
+          }}
+        >
+          <LogOut aria-hidden="true" />
+          <span>Sign out</span>
+        </button>
+      </div>
+    </div>
+  )
+
   return (
     <div className="app-shell">
-      <aside
-        className={cn("sidebar", isMobileNavHidden && "sidebar-mobile-hidden")}
-      >
+      <header className="mobile-app-bar">
+        <div className="brand-copy">
+          <div className="brand-mark">VB</div>
+          <div>
+            <p className="brand-title">Vegetable Tracker</p>
+            <p className="brand-subtitle">Sales and expense records</p>
+          </div>
+        </div>
+        {renderAccountPanel(mobileAccountMenuRef)}
+      </header>
+
+      <aside className="sidebar">
         <div className="brand">
           <div className="brand-copy">
             <div className="brand-mark">VB</div>
@@ -136,43 +197,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <p className="brand-subtitle">Sales and expense records</p>
             </div>
           </div>
-          <div className="account-panel" ref={accountMenuRef}>
-            <div className="account-copy">
-              <span className="account-label">Signed in</span>
-              <span className="account-email">{user?.email}</span>
-            </div>
-            <button
-              type="button"
-              className="profile-menu-button"
-              aria-label="Open account menu"
-              aria-expanded={isAccountMenuOpen}
-              onClick={() => {
-                setIsAccountMenuOpen((isOpen) => !isOpen)
-              }}
-            >
-              <UserCircle aria-hidden="true" />
-            </button>
-            <div
-              className={cn(
-                "account-menu",
-                isAccountMenuOpen && "account-menu-open",
-              )}
-            >
-              <span className="account-menu-label">Signed in</span>
-              <span className="account-menu-email">{user?.email}</span>
-              <button
-                type="button"
-                className="account-menu-action"
-                onClick={() => {
-                  setIsAccountMenuOpen(false)
-                  void signOut()
-                }}
-              >
-                <LogOut aria-hidden="true" />
-                <span>Sign out</span>
-              </button>
-            </div>
-          </div>
+          {renderAccountPanel(desktopAccountMenuRef)}
         </div>
         <nav className="nav-list" aria-label="Main navigation">
           {navItems.map((item) => {
@@ -196,6 +221,41 @@ export function AppLayout({ children }: AppLayoutProps) {
           })}
         </nav>
       </aside>
+
+      <nav
+        className={cn(
+          "mobile-tab-bar",
+          isMobileNavHidden && "sidebar-mobile-hidden",
+        )}
+        aria-label="Mobile navigation"
+      >
+        {mobileNavItems.map((item) => {
+          const Icon = item.icon
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === "/"}
+              className={({ isActive }) =>
+                cn(
+                  "mobile-tab-link",
+                  item.isPrimary && "mobile-tab-link-primary",
+                  isActive && "active",
+                )
+              }
+              onClick={() => {
+                setIsAccountMenuOpen(false)
+              }}
+            >
+              <span className="mobile-tab-icon">
+                <Icon aria-hidden="true" />
+              </span>
+              <span>{item.label}</span>
+            </NavLink>
+          )
+        })}
+      </nav>
+
       <main className="app-main">{children}</main>
     </div>
   )

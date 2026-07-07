@@ -1,9 +1,11 @@
-export type DashboardDailyRecord = {
-  date: string
-  investment: number
-  totalDailyExpense: number
-  recovered: number
-  profit: number
+export type DashboardTopProduct = {
+  productId: string
+  productName: string
+  unit: string
+  quantitySold: number
+  timesBought: number
+  revenue: number
+  estimatedProfit: number
 }
 
 export type DashboardSummary = {
@@ -11,9 +13,7 @@ export type DashboardSummary = {
   purchasesToday: number
   expensesToday: number
   netProfitToday: number
-  totalInvestment: number
-  totalRecovered: number
-  totalExpenses: number
-  totalProfit: number
-  dailyRecords: DashboardDailyRecord[]
+  topByQuantity: DashboardTopProduct[]
+  frequentlyBought: DashboardTopProduct[]
+  mostProfitable: DashboardTopProduct[]
 }
