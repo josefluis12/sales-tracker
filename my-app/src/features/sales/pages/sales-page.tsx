@@ -1,11 +1,14 @@
+import { Link } from "react-router-dom"
+import { BarChart3 } from "lucide-react"
 import { TransactionPage } from "../../../components/common/transaction-page"
 import type { TransactionCreateItem, TransactionCreateValues } from "../../../components/common/transaction-page"
+import { Button } from "../../../components/ui/button"
 import { getActiveProductPrices } from "../../product-prices/services/product-prices-service"
 import { createSaleWithItems, deleteSale, getSales } from "../services/sales-service"
-import type { Sale, SaleFormValues, SaleItemFormValues } from "../types"
+import type { Sale, SaleCreateValues, SaleItemFormValues } from "../types"
 
 function saveSale(values: TransactionCreateValues, items: TransactionCreateItem[]) {
-  return createSaleWithItems(values as SaleFormValues, items as SaleItemFormValues[])
+  return createSaleWithItems(values as SaleCreateValues, items as SaleItemFormValues[])
 }
 
 export function SalesPage() {
@@ -18,6 +21,14 @@ export function SalesPage() {
       createRecord={saveSale}
       deleteRecord={deleteSale}
       getPriceSuggestions={getActiveProductPrices}
+      headerActions={
+        <Button asChild variant="outline" type="button">
+          <Link to="/sales-report">
+            <BarChart3 size={16} aria-hidden="true" />
+            Sales Report
+          </Link>
+        </Button>
+      }
     />
   )
 }

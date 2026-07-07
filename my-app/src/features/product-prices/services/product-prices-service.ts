@@ -1,16 +1,18 @@
 import { supabase } from "../../../lib/supabase"
 import type { Product } from "../../../types/database"
 import type { ProductPrice, ProductPriceFormValues } from "../types"
+import type { Unit } from "../../../constants/units"
 
 export type ProductPriceWithProductName = ProductPrice & {
   product_name?: string
 }
 
-async function ensureProductPriceIsUnique(productId: string, currentId?: string) {
+async function ensureProductPriceIsUnique(productId: string, unit: Unit, currentId?: string) {
   let query = supabase
     .from("product_prices")
     .select("id")
     .eq("product_id", productId)
+    .eq("unit", unit)
     .limit(1)
 
   if (currentId) {
@@ -24,7 +26,7 @@ async function ensureProductPriceIsUnique(productId: string, currentId?: string)
   }
 
   if (data.length > 0) {
-    throw new Error("This product already has a suggested price.")
+    throw new Error("This product already has a suggested price for this unit.")
   }
 }
 
@@ -83,7 +85,7 @@ async function attachProductNames(prices: ProductPrice[]): Promise<ProductPriceW
 }
 
 export async function createProductPrice(values: ProductPriceFormValues) {
-  await ensureProductPriceIsUnique(values.product_id)
+  await ensureProductPriceIsUnique(values.product_id, values.unit)
 
   const { data, error } = await supabase.from("product_prices").insert(values).select().single()
 
@@ -95,8 +97,22 @@ export async function createProductPrice(values: ProductPriceFormValues) {
 }
 
 export async function updateProductPrice(id: string, values: Partial<ProductPriceFormValues>) {
-  if (values.product_id) {
-    await ensureProductPriceIsUnique(values.product_id, id)
+  if (values.product_id || values.unit) {
+    const { data: currentPrice, error: currentPriceError } = await supabase
+      .from("product_prices")
+      .select("product_id,unit")
+      .eq("id", id)
+      .single()
+
+    if (currentPriceError) {
+      throw new Error(currentPriceError.message)
+    }
+
+    await ensureProductPriceIsUnique(
+      values.product_id ?? currentPrice.product_id,
+      values.unit ?? currentPrice.unit,
+      id,
+    )
   }
 
   const { data, error } = await supabase

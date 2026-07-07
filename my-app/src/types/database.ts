@@ -58,6 +58,7 @@ export type Sale = RowBase & {
   sale_date: string
   customer_name: string | null
   total_amount: number
+  amount_paid: number
   payment_status: PaymentStatus
   payment_method: PaymentMethod
   notes: string | null
@@ -91,7 +92,7 @@ export type PurchaseFormValues = Pick<
 >
 export type SaleFormValues = Pick<
   Sale,
-  "sale_date" | "customer_name" | "payment_status" | "payment_method" | "notes"
+  "sale_date" | "customer_name" | "amount_paid" | "payment_status" | "payment_method" | "notes"
 >
 
 type TableDefinition<Row, Insert, Update> = {

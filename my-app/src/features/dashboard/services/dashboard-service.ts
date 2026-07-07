@@ -1,6 +1,6 @@
 import { supabase } from "../../../lib/supabase"
 import { todayIsoDate } from "../../../lib/utils"
-import type { DashboardSummary, DashboardTopProduct } from "../types"
+import type { DashboardDailySales, DashboardSummary, DashboardTopProduct } from "../types"
 
 type ProductSalesTotals = {
   productId: string
@@ -20,6 +20,61 @@ const topProductLimit = 5
 
 function sumAmounts(rows: { total_amount?: number | null; amount?: number | null }[]) {
   return rows.reduce((sum, row) => sum + (row.total_amount ?? row.amount ?? 0), 0)
+}
+
+function getMonthDateRange(value: string) {
+  const [year, month] = value.split("-").map(Number)
+  const monthIndex = month - 1
+  const firstDay = new Date(year, monthIndex, 1)
+  const lastDay = new Date(year, monthIndex + 1, 0)
+
+  return {
+    firstDay: toIsoDate(firstDay),
+    lastDay: toIsoDate(lastDay),
+    daysInMonth: lastDay.getDate(),
+    year,
+    monthIndex,
+  }
+}
+
+function toIsoDate(value: Date) {
+  const year = value.getFullYear()
+  const month = String(value.getMonth() + 1).padStart(2, "0")
+  const day = String(value.getDate()).padStart(2, "0")
+
+  return `${year}-${month}-${day}`
+}
+
+function createCurrentMonthDailySales(
+  sales: { sale_date: string; total_amount: number }[],
+  today: string,
+): DashboardDailySales[] {
+  const { firstDay, lastDay, daysInMonth, year, monthIndex } = getMonthDateRange(today)
+  const totalsByDate = new Map<string, DashboardDailySales>()
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const date = toIsoDate(new Date(year, monthIndex, day))
+    totalsByDate.set(date, {
+      date,
+      salesCount: 0,
+      totalSales: 0,
+    })
+  }
+
+  sales
+    .filter((sale) => sale.sale_date >= firstDay && sale.sale_date <= lastDay)
+    .forEach((sale) => {
+      const current = totalsByDate.get(sale.sale_date)
+
+      if (!current) {
+        return
+      }
+
+      current.salesCount += 1
+      current.totalSales += sale.total_amount ?? 0
+    })
+
+  return Array.from(totalsByDate.values())
 }
 
 function getProductUnitKey(productId: string, unit: string) {
@@ -176,12 +231,14 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     purchaseItems.data,
     todaySaleIds,
   )
+  const dailySales = createCurrentMonthDailySales(sales.data, today)
 
   return {
     salesToday,
     purchasesToday,
     expensesToday,
     netProfitToday: salesToday - purchasesToday - expensesToday,
+    dailySales,
     ...topProductLists,
   }
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode, type RefObject } from "rea
 import { NavLink } from "react-router-dom"
 import {
   Banknote,
+  BarChart3,
   Gauge,
   LogOut,
   Package,
@@ -22,15 +23,16 @@ const navItems = [
   { to: "/suppliers", label: "Suppliers", icon: Store },
   { to: "/purchases", label: "Purchases", icon: ShoppingBasket },
   { to: "/sales", label: "Sales", icon: Banknote },
+  { to: "/sales-report", label: "Sales Report", icon: BarChart3 },
   { to: "/expenses", label: "Expenses", icon: ReceiptText },
 ]
 
 const mobileNavItems = [
   { to: "/", label: "Home", icon: Gauge },
   { to: "/purchases", label: "Purchases", icon: ShoppingBasket },
-  { to: "/sales", label: "Create Sales", icon: PlusCircle, isPrimary: true },
+  { to: "/sales", label: "Sale", icon: PlusCircle, isPrimary: true },
+  { to: "/sales-report", label: "Report", icon: BarChart3 },
   { to: "/expenses", label: "Expenses", icon: ReceiptText },
-  { to: "/products", label: "Products", icon: Package },
 ]
 
 type AppLayoutProps = {

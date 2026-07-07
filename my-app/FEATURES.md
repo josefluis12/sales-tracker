@@ -37,3 +37,9 @@ Create purchases with multiple items. Each item subtotal is `quantity * unit_cos
 ## Sales
 
 Create sales with multiple items. Each item subtotal is `quantity * unit_price`; the sale total is the sum of item subtotals.
+
+## Sales Report
+
+View sales grouped by day with daily totals, record counts, and paid, partial,
+and unpaid amount summaries. Selecting a day shows the item-level products sold,
+quantities, units, unit prices, subtotals, and sale details for that date.

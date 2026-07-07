@@ -8,11 +8,18 @@ export type DashboardTopProduct = {
   estimatedProfit: number
 }
 
+export type DashboardDailySales = {
+  date: string
+  salesCount: number
+  totalSales: number
+}
+
 export type DashboardSummary = {
   salesToday: number
   purchasesToday: number
   expensesToday: number
   netProfitToday: number
+  dailySales: DashboardDailySales[]
   topByQuantity: DashboardTopProduct[]
   frequentlyBought: DashboardTopProduct[]
   mostProfitable: DashboardTopProduct[]

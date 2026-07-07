@@ -23,11 +23,12 @@ The app expects these Supabase tables:
 ## Business Rules
 
 - `products` stores item names only.
-- `product_prices` stores one suggested selling price per product for sale entry.
+- `product_prices` stores suggested selling prices per product and unit for sale entry.
 - `sale_items.unit_price` stores the actual price charged during the sale.
 - `purchase_items.unit_cost` stores the actual buying cost.
 - Product prices may change, but old sale records keep their original unit price.
-- `product_prices.product_id` should be unique so each product has only one current suggested price.
+- `sales.amount_paid` stores collected payment; unpaid balance is `total_amount - amount_paid`.
+- `product_prices.product_id` and `unit` should be unique together so each product has one current suggested price per unit.
 - Purchases and sales may use different units.
 - V1 does not perform unit conversion or inventory deduction.
 
@@ -52,5 +53,5 @@ Core record columns:
 - `expenses`: `expense_date`, `category`, `amount`, `updated_at`
 - `purchases`: `supplier_id`, `purchase_date`, `total_amount`, `payment_status`, `payment_method`, `updated_at`
 - `purchase_items`: `purchase_id`, `product_id`, `quantity`, `unit`, `unit_cost`, `subtotal`
-- `sales`: `sale_date`, `customer_name`, `total_amount`, `payment_status`, `payment_method`, `notes`
+- `sales`: `sale_date`, `customer_name`, `total_amount`, `amount_paid`, `payment_status`, `payment_method`, `notes`
 - `sale_items`: `sale_id`, `product_id`, `quantity`, `unit`, `unit_price`, `subtotal`

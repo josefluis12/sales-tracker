@@ -4,13 +4,14 @@ import { Button } from "../../../components/ui/button"
 import { formatCurrency, formatDate } from "../../../lib/formatters"
 import { getErrorMessage } from "../../../lib/utils"
 import { getDashboardSummary } from "../services/dashboard-service"
-import type { DashboardSummary, DashboardTopProduct } from "../types"
+import type { DashboardDailySales, DashboardSummary, DashboardTopProduct } from "../types"
 
 const emptySummary: DashboardSummary = {
   salesToday: 0,
   purchasesToday: 0,
   expensesToday: 0,
   netProfitToday: 0,
+  dailySales: [],
   topByQuantity: [],
   frequentlyBought: [],
   mostProfitable: [],
@@ -75,6 +76,95 @@ function TopProductsTable({
   )
 }
 
+type MonthlySalesChartProps = {
+  dailySales: DashboardDailySales[]
+  loading: boolean
+}
+
+function MonthlySalesChart({ dailySales, loading }: MonthlySalesChartProps) {
+  const maxSales = Math.max(...dailySales.map((day) => day.totalSales), 0)
+
+  return (
+    <section className="panel" aria-labelledby="monthly-sales-chart-title">
+      <div className="panel-header">
+        <h2 className="panel-title" id="monthly-sales-chart-title">
+          Monthly Sales by Day
+        </h2>
+      </div>
+      {loading ? (
+        <div className="state">Loading monthly sales...</div>
+      ) : dailySales.length === 0 ? (
+        <div className="state">No sales days available.</div>
+      ) : (
+        <div className="monthly-sales-chart" aria-label="Bar chart of daily sales this month">
+          {dailySales.map((day) => {
+            const height = maxSales > 0 ? Math.max((day.totalSales / maxSales) * 100, 4) : 0
+            const dayNumber = new Date(day.date).getDate()
+
+            return (
+              <div className="monthly-sales-bar-item" key={day.date}>
+                <div className="monthly-sales-bar-track">
+                  <div
+                    className="monthly-sales-bar-fill"
+                    style={{ height: `${height}%` }}
+                    title={`${formatDate(day.date)}: ${formatCurrency(day.totalSales)}`}
+                  />
+                </div>
+                <span>{dayNumber}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </section>
+  )
+}
+
+type DailySalesTableProps = {
+  dailySales: DashboardDailySales[]
+  loading: boolean
+}
+
+function DailySalesTable({ dailySales, loading }: DailySalesTableProps) {
+  const daysWithSales = dailySales.filter((day) => day.salesCount > 0).toReversed()
+
+  return (
+    <section className="panel" aria-labelledby="daily-sales-table-title">
+      <div className="panel-header">
+        <h2 className="panel-title" id="daily-sales-table-title">
+          Daily Sales
+        </h2>
+      </div>
+      {loading ? (
+        <div className="state">Loading daily sales...</div>
+      ) : daysWithSales.length === 0 ? (
+        <div className="state">No sales recorded this month.</div>
+      ) : (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Sales</th>
+                <th scope="col">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {daysWithSales.map((day) => (
+                <tr key={day.date}>
+                  <td data-label="Date">{formatDate(day.date)}</td>
+                  <td data-label="Sales">{day.salesCount.toLocaleString("en-PH")}</td>
+                  <td data-label="Total">{formatCurrency(day.totalSales)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )
+}
+
 export function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary>(emptySummary)
   const [loading, setLoading] = useState(true)
@@ -125,6 +215,11 @@ export function DashboardPage() {
           </article>
         ))}
       </section>
+
+      <div className="dashboard-sales-grid">
+        <MonthlySalesChart dailySales={summary.dailySales} loading={loading} />
+        <DailySalesTable dailySales={summary.dailySales} loading={loading} />
+      </div>
 
       <section aria-labelledby="top-sellers-title">
         <div className="mb-3">

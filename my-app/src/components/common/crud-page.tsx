@@ -35,6 +35,16 @@ type CrudPageProps<TRecord extends CrudRecord, TValues extends Record<string, un
   createRecord: (values: TValues) => Promise<TRecord>
   updateRecord: (id: string, values: Partial<TValues>) => Promise<TRecord>
   deleteRecord: (id: string) => Promise<void>
+  validateCreate?: (values: TValues, records: TRecord[]) => string | null
+  getCreateConfirmation?: (
+    values: TValues,
+    records: TRecord[],
+  ) => {
+    title: string
+    message: string
+    records: TRecord[]
+    confirmLabel?: string
+  } | null
 }
 
 function createFormValues<TValues extends Record<string, unknown>>(values: TValues) {
@@ -91,10 +101,19 @@ export function CrudPage<TRecord extends CrudRecord, TValues extends Record<stri
   createRecord,
   updateRecord,
   deleteRecord,
+  validateCreate,
+  getCreateConfirmation,
 }: CrudPageProps<TRecord, TValues>) {
   const [records, setRecords] = useState<TRecord[]>([])
   const [formValues, setFormValues] = useState(() => createFormValues(initialValues))
   const [editingRecord, setEditingRecord] = useState<TRecord | null>(null)
+  const [pendingCreateConfirmation, setPendingCreateConfirmation] = useState<{
+    values: TValues
+    title: string
+    message: string
+    records: TRecord[]
+    confirmLabel?: string
+  } | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -131,6 +150,7 @@ export function CrudPage<TRecord extends CrudRecord, TValues extends Record<stri
   function resetForm() {
     setEditingRecord(null)
     setFormValues(createFormValues(initialValues))
+    setPendingCreateConfirmation(null)
   }
 
   function startEdit(record: TRecord) {
@@ -144,18 +164,12 @@ export function CrudPage<TRecord extends CrudRecord, TValues extends Record<stri
     setFormValues(nextValues)
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  async function saveCreate(values: TValues) {
     setSaving(true)
     setError(null)
 
     try {
-      if (editingRecord) {
-        await updateRecord(editingRecord.id, formValues as Partial<TValues>)
-      } else {
-        await createRecord(formValues as TValues)
-      }
-
+      await createRecord(values)
       resetForm()
       await loadRecords()
     } catch (saveError) {
@@ -163,6 +177,61 @@ export function CrudPage<TRecord extends CrudRecord, TValues extends Record<stri
     } finally {
       setSaving(false)
     }
+  }
+
+  async function saveUpdate(id: string, values: Partial<TValues>) {
+    setSaving(true)
+    setError(null)
+
+    try {
+      await updateRecord(id, values)
+      resetForm()
+      await loadRecords()
+    } catch (saveError) {
+      setError(getErrorMessage(saveError))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError(null)
+
+    if (editingRecord) {
+      await saveUpdate(editingRecord.id, formValues as Partial<TValues>)
+      return
+    }
+
+    const submittedValues = { ...formValues } as TValues
+    const validationError = validateCreate?.(submittedValues, records)
+
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
+    const confirmation = getCreateConfirmation?.(submittedValues, records)
+
+    if (confirmation && confirmation.records.length > 0) {
+      setPendingCreateConfirmation({
+        values: submittedValues,
+        ...confirmation,
+      })
+      return
+    }
+
+    await saveCreate(submittedValues)
+  }
+
+  async function confirmPendingCreate() {
+    if (!pendingCreateConfirmation) {
+      return
+    }
+
+    const { values } = pendingCreateConfirmation
+    setPendingCreateConfirmation(null)
+    await saveCreate(values)
   }
 
   async function handleDelete(record: TRecord) {
@@ -184,6 +253,52 @@ export function CrudPage<TRecord extends CrudRecord, TValues extends Record<stri
 
   return (
     <>
+      {pendingCreateConfirmation ? (
+        <div className="dialog-backdrop" role="presentation">
+          <div
+            aria-labelledby="create-confirmation-title"
+            aria-modal="true"
+            className="dialog-panel"
+            role="dialog"
+          >
+            <div className="dialog-header">
+              <h2 className="dialog-title" id="create-confirmation-title">
+                {pendingCreateConfirmation.title}
+              </h2>
+              <Button
+                variant="outline"
+                size="icon"
+                type="button"
+                onClick={() => setPendingCreateConfirmation(null)}
+              >
+                <X size={16} aria-hidden="true" />
+                <span className="sr-only">Cancel</span>
+              </Button>
+            </div>
+            <p className="dialog-description">{pendingCreateConfirmation.message}</p>
+            <div className="similar-list">
+              {pendingCreateConfirmation.records.map((record) => (
+                <div className="similar-list-item" key={record.id}>
+                  {String(record.name ?? record.id)}
+                </div>
+              ))}
+            </div>
+            <div className="dialog-actions">
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => setPendingCreateConfirmation(null)}
+              >
+                Cancel
+              </Button>
+              <Button type="button" disabled={saving} onClick={() => void confirmPendingCreate()}>
+                {saving ? "Saving" : pendingCreateConfirmation.confirmLabel ?? "Add Anyway"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <header className="page-header">
         <div>
           <h1 className="page-title">{title}</h1>

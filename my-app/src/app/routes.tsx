@@ -5,6 +5,7 @@ import { ProductPricesPage } from "../features/product-prices/pages/product-pric
 import { ProductsPage } from "../features/products/pages/products-page"
 import { PurchasesPage } from "../features/purchases/pages/purchases-page"
 import { SalesPage } from "../features/sales/pages/sales-page"
+import { SalesReportPage } from "../features/sales/pages/sales-report-page"
 import { SuppliersPage } from "../features/suppliers/pages/suppliers-page"
 
 export function AppRoutes() {
@@ -16,6 +17,7 @@ export function AppRoutes() {
       <Route path="suppliers" element={<SuppliersPage />} />
       <Route path="purchases" element={<PurchasesPage />} />
       <Route path="sales" element={<SalesPage />} />
+      <Route path="sales-report" element={<SalesReportPage />} />
       <Route path="expenses" element={<ExpensesPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -212,6 +212,10 @@
     @apply mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between;
   }
 
+  .page-header-actions {
+    @apply flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end;
+  }
+
   .page-title {
     @apply m-0 text-2xl font-extrabold leading-tight tracking-normal text-foreground sm:text-3xl;
   }
@@ -290,12 +294,64 @@
     @apply flex items-center gap-2;
   }
 
+  .product-price-groups {
+    @apply grid gap-4 p-4;
+  }
+
+  .product-price-group {
+    @apply overflow-hidden rounded-lg border bg-background;
+  }
+
+  .product-price-group-header {
+    @apply flex flex-col gap-3 border-b bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .product-price-group-header h3 {
+    @apply m-0 text-base font-extrabold text-foreground;
+  }
+
+  .product-price-group-header p {
+    @apply m-0 mt-1 text-sm text-muted-foreground;
+  }
+
   .state {
     @apply p-6 text-center text-sm text-muted-foreground;
   }
 
   .state.error {
     @apply m-4 rounded-md border border-red-200 bg-red-50 p-4 text-left font-medium text-red-700;
+  }
+
+  .dialog-backdrop {
+    @apply fixed inset-0 z-50 grid place-items-center bg-[#102819]/55 px-4 py-6;
+  }
+
+  .dialog-panel {
+    @apply max-h-[calc(100vh-3rem)] w-full max-w-lg overflow-y-auto rounded-lg border bg-card text-card-foreground shadow-2xl;
+  }
+
+  .dialog-header {
+    @apply flex items-center justify-between gap-3 border-b bg-muted/30 px-4 py-3;
+  }
+
+  .dialog-title {
+    @apply m-0 text-lg font-extrabold tracking-normal text-foreground;
+  }
+
+  .dialog-description {
+    @apply m-0 px-4 pb-3 pt-4 text-sm leading-6 text-muted-foreground;
+  }
+
+  .similar-list {
+    @apply grid gap-2 px-4 pb-4;
+  }
+
+  .similar-list-item {
+    @apply rounded-md border bg-muted/30 px-3 py-2 text-sm font-semibold text-foreground;
+  }
+
+  .dialog-actions {
+    @apply flex flex-col-reverse gap-2 border-t bg-muted/20 px-4 py-3 sm:flex-row sm:justify-end;
   }
 
   .summary-grid {
@@ -314,12 +370,118 @@
     @apply m-0 text-2xl font-extrabold tracking-normal text-foreground;
   }
 
+  .dashboard-sales-grid {
+    @apply mb-5 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.65fr)] xl:items-start;
+  }
+
+  .monthly-sales-chart {
+    @apply flex h-72 items-end gap-1 overflow-x-auto px-4 py-4;
+  }
+
+  .monthly-sales-bar-item {
+    @apply grid h-full min-w-8 grid-rows-[1fr_auto] items-end gap-2 text-center;
+  }
+
+  .monthly-sales-bar-track {
+    @apply flex h-full items-end rounded-md bg-muted/70;
+  }
+
+  .monthly-sales-bar-fill {
+    @apply min-h-0 w-full rounded-md bg-[#256f46] transition-all;
+  }
+
+  .monthly-sales-bar-item span {
+    @apply text-xs font-bold text-muted-foreground;
+  }
+
   .item-row {
-    @apply grid grid-cols-1 gap-2 rounded-lg border bg-muted/20 p-3 lg:grid-cols-[minmax(10rem,1fr)_5.5rem_6rem_7rem_2.5rem] lg:items-end lg:border-0 lg:bg-transparent lg:p-0;
+    @apply grid grid-cols-1 gap-2 rounded-lg border bg-muted/20 p-3 lg:grid-cols-[minmax(10rem,1fr)_5.5rem_6rem_7rem_7rem_2.5rem] lg:items-end lg:border-0 lg:bg-transparent lg:p-0;
+  }
+
+  .sale-mobile-details,
+  .sale-mobile-product-step {
+    @apply hidden;
   }
 
   .total-strip {
     @apply mt-1 flex items-center justify-between gap-3 rounded-lg border bg-muted/60 px-4 py-3 text-base font-extrabold;
+  }
+
+  .sales-report-list {
+    @apply grid gap-4 p-4;
+  }
+
+  .sales-report-grid {
+    @apply grid grid-cols-1 gap-4 xl:grid-cols-[minmax(20rem,0.8fr)_minmax(0,1.2fr)] xl:items-start;
+  }
+
+  .sales-report-day {
+    @apply w-full overflow-hidden rounded-lg border bg-card text-left transition-colors hover:border-[#256f46] hover:bg-[#f7fff4];
+  }
+
+  .sales-report-day-active {
+    @apply border-[#256f46] bg-[#f7fff4] shadow-sm;
+  }
+
+  .sales-report-day-header {
+    @apply flex flex-col gap-3 border-b bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .sales-report-day-header h3 {
+    @apply m-0 text-base font-extrabold text-foreground;
+  }
+
+  .sales-report-day-header p {
+    @apply m-0 mt-1 text-sm text-muted-foreground;
+  }
+
+  .sales-report-day-header strong {
+    @apply text-xl font-extrabold text-foreground;
+  }
+
+  .sales-report-day-total {
+    @apply flex items-center justify-between gap-2 text-foreground sm:justify-end;
+  }
+
+  .sales-report-day-total svg {
+    @apply h-5 w-5 text-muted-foreground;
+  }
+
+  .sales-report-metrics {
+    @apply grid gap-2 border-b px-4 py-3 text-sm font-semibold text-muted-foreground sm:grid-cols-3;
+  }
+
+  .sales-report-detail-summary {
+    @apply flex items-center justify-between gap-3 border-b px-4 py-3 text-sm font-semibold text-muted-foreground;
+  }
+
+  .sales-report-detail-summary strong {
+    @apply text-base font-extrabold text-foreground;
+  }
+
+  .sales-report-sale {
+    @apply overflow-hidden rounded-lg border bg-card;
+  }
+
+  .sales-report-sale-header {
+    @apply flex flex-col gap-3 border-b bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .sales-report-sale-header h3 {
+    @apply m-0 text-base font-extrabold text-foreground;
+  }
+
+  .sales-report-sale-header p,
+  .sales-report-sale-notes {
+    @apply m-0 mt-1 text-sm text-muted-foreground;
+  }
+
+  .sales-report-sale-header strong {
+    @apply text-lg font-extrabold text-foreground;
+  }
+
+  .sales-report-sale-notes {
+    @apply border-b px-4 py-3;
   }
 }
 
@@ -365,5 +527,58 @@
 
   .row-actions {
     @apply justify-end;
+  }
+
+  .sale-secondary-field,
+  .sale-desktop-product-field {
+    @apply hidden;
+  }
+
+  .sale-mobile-details {
+    @apply block rounded-lg border bg-muted/20;
+  }
+
+  .sale-mobile-details summary {
+    @apply cursor-pointer list-none px-4 py-3 text-sm font-extrabold text-foreground;
+  }
+
+  .sale-mobile-details summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .sale-mobile-details-body {
+    @apply grid gap-4 border-t px-4 py-4;
+  }
+
+  .sale-mobile-item-row {
+    @apply gap-4;
+  }
+
+  .sale-mobile-product-step {
+    @apply block;
+  }
+
+  .sale-mobile-step-label {
+    @apply m-0 mb-2 text-sm font-extrabold text-foreground;
+  }
+
+  .sale-mobile-product-grid {
+    @apply grid max-h-72 grid-cols-2 gap-2 overflow-y-auto pr-1;
+  }
+
+  .sale-mobile-product-option {
+    @apply min-h-12 rounded-md border bg-background px-3 py-2 text-left text-sm font-bold text-foreground shadow-sm transition-colors;
+  }
+
+  .sale-mobile-product-option-active {
+    @apply border-[#256f46] bg-[#e9f7e2] text-[#163824];
+  }
+
+  .sale-mobile-item-detail {
+    @apply block;
+  }
+
+  .sale-mobile-hidden {
+    @apply hidden;
   }
 }
